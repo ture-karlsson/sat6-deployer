@@ -1,0 +1,79 @@
+---
+# this playbook can be used to fix all prerequisites and install a Satellite 6.2 server
+# you need to provide the following:
+# - deploy a RHEL 7 server according to the specifications in https://access.redhat.com/documentation/en-us/red_hat_satellite/6.2/html/installation_guide/preparing_your_environment_for_installation
+# - register the server with "subscription-manager register ..."
+# - attach a valid subscription for satellite 6 with e.g "subscription-manager attach --pool <id>"
+#
+# since the registration is much dependant on the environment, it is left as a prerequisite
+
+- hosts: satellite
+  connection: local
+  tasks:
+
+  - name: disable all repositories
+    command: "subscription-manager repos --disable '*'"
+
+  - name: enable satellite 6 repositories
+    command: "subscription-manager repos --enable rhel-7-server-rpms --enable rhel-server-rhscl-7-rpms --enable rhel-7-server-satellite-6.2-rpms"
+
+  - name: make sure firewalld is enabled and running
+    service:
+      name: firewalld
+      state: started
+      enabled: true
+
+  - name: open firewalld ports
+    firewalld:
+      immediate: yes
+      permanent: yes
+      state: enabled
+      port: "{{ item }}"
+    with_items: "{{ open_ports }}" 
+
+  - name: make sure selinux is in enforcing mode
+    selinux:
+      policy: targeted
+      state: enforcing
+
+# these tasks verify that DNS is configured properly
+# if any of these tasks fail, the installation won't complete successully
+
+  - name: verify localhost resolution
+    command: "ping -c1 localhost"
+    changed_when: false
+
+  - name: verify hostname resolution 
+    command: "ping -c1 {{ ansible_hostname }}"
+    changed_when: false
+
+  - name: verify FQDN resolution
+    command: "ping -c1 {{ ansible_fqdn }}"
+    changed_when: false
+
+  - name: perform yum update
+    yum:
+      name: "*"
+      state: latest
+      update_cache: yes
+ 
+  - name: install satellite packages
+    yum:
+      name: satellite
+      state: latest 
+
+# this task will run the satellite-installer
+# it will be run with basic configuration (no capsule services like DNS, DHCP etc) 
+# more configuration can be added manually later, see "satellite-installer --help" for all options
+
+  - name: run satellite-installer (this will take a while...)
+    command: "satellite-installer --foreman-initial-organization '{{ organization }}' --foreman-initial-location '{{ location }}' --foreman-admin-password '{{ admin_password }}'"
+
+# debug task to check installer command
+#  - name: run satellite-installer (this will take a while...)
+#    debug:
+#      msg: "satellite-installer --foreman-initial-organization '{{ organization }}' --foreman-initial-location '{{ location }}' --foreman-admin-password '{{ admin_password }}'"
+
+  - name: notify user that installation is complete
+    debug: 
+      msg: "The installation is now complete and it is time to configure your Satellite. This can be done with sat6-configure.yaml"

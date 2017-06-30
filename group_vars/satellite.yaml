@@ -1,0 +1,162 @@
+---
+
+###
+# variables for sat6-install.yaml
+###
+
+# firewalld ports to open
+open_ports:
+- 53/tcp
+- 53/udp
+- 67/udp
+- 69/udp
+- 80/tcp
+- 443/tcp
+- 5647/tcp
+- 8000/tcp
+- 8140/tcp
+- 9090/tcp
+
+# name of the organization that will be configured
+organization: "Tures Org"
+
+# one initial location (more can be added later)
+location: "Malmo"
+
+# initial password for the adminstrator account (can be changed later)
+admin_password: "redhat123"
+
+###
+# variables for sat6-configure.yaml
+###
+
+# add path to where you put your manifest. this file have to be put here manually before running sat6-configure.yaml
+manifest: files/manifest.zip
+
+# add a list of what RHEL repositories you want to sync
+# specify product and repository name, architecture (x86_64 or i386 etc) and optionally release version for repositories that require that
+rhel_repositories:
+- product: Red Hat Enterprise Linux Server
+  name: Red Hat Enterprise Linux 7 Server (RPMs)
+  basearch: x86_64
+  releasever: 7Server
+
+- product: Red Hat Enterprise Linux Server
+  name: Red Hat Satellite Tools 6.2 (for RHEL 7 Server) (RPMs)
+  basearch: x86_64
+
+- product: Red Hat Enterprise Linux Server
+  name: Red Hat Enterprise Linux 7 Server - Optional (RPMs)
+  basearch: x86_64
+  releasever: 7Server
+
+- product: Red Hat Enterprise Linux Server
+  name: Red Hat Enterprise Linux 7 Server - Extras (RPMs)
+  basearch: x86_64
+
+- product: Red Hat Enterprise Linux Server
+  name: Red Hat Enterprise Linux 7 Server (Kickstart) 
+  basearch: x86_64
+  releasever: 7.3
+
+- product: Red Hat OpenShift Container Platform
+  name: Red Hat OpenShift Container Platform 3.5 (RPMs)
+  basearch: x86_64
+
+- product: Red Hat Enterprise Linux Fast Datapath
+  name: Red Hat Enterprise Linux Fast Datapath (RHEL 7 Server) (RPMs)
+  basearch: x86_64
+  releasever: 7Server
+
+# note: the above repositories correspond to the following hammer commands
+# hammer repository-set enable --product 'Red Hat Enterprise Linux Server' --name 'Red Hat Enterprise Linux 7 Server (RPMs)' --basearch 'x86_64' --releasever '7Server'
+# hammer repository-set enable --product 'Red Hat Enterprise Linux Server' --name 'Red Hat Satellite Tools 6.2 (for RHEL 7 Server) (RPMs)' --basearch 'x86_64'
+# hammer repository-set enable --product 'Red Hat Enterprise Linux Server' --name 'Red Hat Enterprise Linux 7 Server - Optional (RPMs)' --basearch 'x86_64' --releasever '7Server'
+# hammer repository-set enable --product 'Red Hat Enterprise Linux Server' --name 'Red Hat Enterprise Linux 7 Server - Extras (RPMs)' --basearch 'x86_64'
+# hammer repository-set enable --product 'Red Hat Enterprise Linux Server' --name 'Red Hat Enterprise Linux 7 Server (Kickstart)' --basearch 'x86_64' --releasever '7.3'
+# hammer repository-set enable --product 'Red Hat OpenShift Container Platform' --name 'Red Hat OpenShift Container Platform 3.5 (RPMs)' --basearch 'x86_64'
+# hammer repository-set enable --product 'Red Hat Enterprise Linux Fast Datapath' --name 'Red Hat Enterprise Linux Fast Datapath (RHEL 7 Server) (RPMs)' --basearch 'x86_64' --releasever '7Server'
+
+# specify a list of major versions of RHEL you want to manage with Satellite (5, 6, 7...) (in this case only RHEL 7 servers are used)
+rhel_major_versions:
+- 7
+
+# specify a list of what custom products and underlying repositories you want to create
+# the playbook will then create products, repositories, GPG keys accordingly
+# this is an example on how to setup EPEL 7
+custom_products:
+- name: Extra Packages for Enterprise Linux
+  repositories:
+  - name: EPEL7
+    url: https://dl.fedoraproject.org/pub/epel/7/x86_64/
+    gpg_key: https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-7
+    content_type: yum
+
+# specify if you want to set download policy to "immediate" or "on_demand" for all repositories.
+# "on_demand" aka "lazy sync" make sure that the repo data for all repositories are synced to the Satellite, but the actual RPMs are only downloaded when a server request them.
+# this saves a lot of disk space on the Satellite, but can make updates slower.
+download_policy: on_demand
+
+# specify the lifecycle environments you want to create. each one need a name and the name of the previous environment (first one is always Library) 
+lifecycle_environments:
+- previous: Library
+  name: DEV
+
+- previous: DEV
+  name: TEST
+
+- previous: TEST
+  name: PROD
+
+# define what kind of server profiles you want to create. a profile defines a RHEL major version, a set of repositories and one or more subscriptions.
+# the playbook will then create the following:
+# - a content view for the profile with the following naming scheme: CV-RHEL<rhel_major>-<profile_name>, e.g. CV-RHEL7-Base for the first group example below
+# - one activation key per lifecycle environment that use the content view and assign the specified RHEL major version and subscription to the hosts that register with this key
+# - host collections
+# - host groups
+profiles:
+- name: Base
+  rhel_major: 7
+  repos:
+  - name: Red Hat Enterprise Linux 7 Server RPMs x86_64 7Server
+    product: Red Hat Enterprise Linux Server
+  - name: Red Hat Satellite Tools 6.2 for RHEL 7 Server RPMs x86_64
+    product: Red Hat Enterprise Linux Server
+  - name: Red Hat Enterprise Linux 7 Server Kickstart x86_64 7.3
+    product: Red Hat Enterprise Linux Server
+  subscription: Red Hat Enterprise Linux Server, Standard (Physical or Virtual Nodes)
+ 
+- name: Tower
+  rhel_major: 7
+  repos:
+  - name: Red Hat Enterprise Linux 7 Server RPMs x86_64 7Server
+    product: Red Hat Enterprise Linux Server
+  - name: Red Hat Satellite Tools 6.2 for RHEL 7 Server RPMs x86_64
+    product: Red Hat Enterprise Linux Server
+  - name: Red Hat Enterprise Linux 7 Server Kickstart x86_64 7.3
+    product: Red Hat Enterprise Linux Server
+  - name: Red Hat Enterprise Linux 7 Server - Optional RPMs x86_64 7Server
+    product: Red Hat Enterprise Linux Server
+  - name: Red Hat Enterprise Linux 7 Server - Extras RPMs x86_64
+    product: Red Hat Enterprise Linux Server
+  - name: EPEL7
+    product: Extra Packages for Enterprise Linux
+  subscription: Red Hat Enterprise Linux Server, Standard (Physical or Virtual Nodes)
+
+- name: Openshift
+  rhel_major: 7
+  repos:
+  - name: Red Hat Enterprise Linux 7 Server RPMs x86_64 7Server
+    product: Red Hat Enterprise Linux Server
+  - name: Red Hat Satellite Tools 6.2 for RHEL 7 Server RPMs x86_64
+    product: Red Hat Enterprise Linux Server
+  - name: Red Hat Enterprise Linux 7 Server Kickstart x86_64 7.3
+    product: Red Hat Enterprise Linux Server
+  - name: Red Hat Enterprise Linux 7 Server - Extras RPMs x86_64
+    product: Red Hat Enterprise Linux Server
+  - name: Red Hat Enterprise Linux Fast Datapath RHEL 7 Server RPMs x86_64 7Server
+    product: Red Hat Enterprise Linux Fast Datapath
+  - name: Red Hat OpenShift Container Platform 3.5 RPMs x86_64
+    product: Red Hat OpenShift Container Platform
+  subscription: OpenShift Enterprise Infrastructure
+

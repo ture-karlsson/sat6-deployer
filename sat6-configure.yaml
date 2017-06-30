@@ -1,0 +1,297 @@
+---
+- hosts: satellite
+  connection: local
+  
+  tasks:
+
+  - name: set hammer credentials
+    template:
+      src: templates/cli_config.yml.j2
+      dest: /etc/hammer/cli_config.yml
+
+  - name: get organization id
+    shell: "hammer --csv organization list | tail -n +2 | awk -F ',' '{print $1}'"
+    register: organization_id
+    changed_when: false
+
+  - name: add hammer organization default
+    command: "hammer defaults add --param-name organization_id --param-value {{ organization_id.stdout }}"
+
+  - name: upload manifest
+    command: hammer subscription upload --file {{ manifest }} 
+
+  - name: enable rhel repositories
+    command:
+      hammer repository-set enable 
+      --product '{{ item.product }}' 
+      --name '{{ item.product }}'
+      --basearch '{{ item.basearch }}'
+      {% if item.releasever is defined %} --releasever '{{ item.releasever }}'{% endif %}
+    with_items: "{{ rhel_repositories }}"
+    ignore_errors: true
+
+  - name: get current lifecycle environments
+    shell: hammer --csv lifecycle-environment list | tail -n +2 | awk -F ',' '{print $2}'
+    register: current_lifecycle_environments
+    changed_when: false
+
+  - name: create lifecycle environments
+    command: hammer lifecycle-environment create --name {{ item.name }} --prior {{ item.previous }}
+    when: item.name not in current_lifecycle_environments.stdout
+    with_items: "{{ lifecycle_environments }}"
+
+  - name: get current products
+    shell: hammer --csv product list --custom true | tail -n +2 | awk -F ',' '{print $2}'
+    register: current_products
+    changed_when: false
+
+  - name: create custom products
+    command: hammer product create --name '{{ item.name }}'
+    when: item.name not in current_products.stdout
+    with_items: "{{ custom_products }}"
+
+  - name: download GPG keys
+    get_url:
+      url: "{{ item.1.gpg_key }}"
+      dest: "files/{{ item.1.gpg_key.split('/')[-1] }}"
+    with_subelements:
+    - "{{ custom_products }}"
+    - repositories
+
+  - name: get current GPG keys
+    shell: hammer --csv gpg list | tail -n +2 | awk -F ',' '{print $2}'
+    register: current_gpg_keys
+    changed_when: false
+
+  - name: create GPG keys
+    shell: hammer gpg create --name {{ item.1.gpg_key.split('/')[-1] }} --key files/{{ item.1.gpg_key.split('/')[-1] }}
+    when: item.1.gpg_key.split('/')[-1] not in current_gpg_keys.stdout
+    with_subelements:
+    - "{{ custom_products }}"
+    - repositories 
+
+  - name: get current repositories
+    shell: hammer --csv repository list | tail -n +2 | awk -F ',' '{print $2}'
+    register: current_repositories
+    changed_when: false
+
+  - name: create custom repositories
+    command: >
+      hammer repository create 
+      --content-type {{ item.1.content_type }} 
+      --url {{ item.1.url }} 
+      --gpg-key {{ item.1.gpg_key.split('/')[-1] }} 
+      --product '{{ item.0.name }}' 
+      --name '{{ item.1.name }}'
+    when: item.1.name not in current_repositories.stdout
+    with_subelements:
+    - "{{ custom_products }}"
+    - repositories 
+
+  - name: get current repository IDs
+    shell: hammer --csv repository list | tail -n +2 | awk -F ',' '{print $1}'
+    register: current_repository_ids
+    changed_when: false
+
+  - name: update download policy on all repositories
+    command: hammer repository update --download-policy {{ download_policy }} --id {{ item }}
+    with_items: "{{ current_repository_ids.stdout_lines }}"
+    changed_when: false
+
+    # this task makes sure there are no sync tasks running before starting new sync tasks
+  - name: wait for sync tasks to complete
+    action:
+      shell hammer --csv task list --search 'label = Actions::Katello::Repository::Sync and state = running'
+    register: running_sync_tasks
+    until: running_sync_tasks.stdout.find("running") == -1
+    delay: 60
+    retries: 60
+    changed_when: false
+
+  - name: sync all repositories
+    command: hammer repository synchronize --async --id {{ item }}
+    with_items: "{{ current_repository_ids.stdout_lines }}"
+
+    # this tasks makes sure that sync tasks are complete before continuing
+  - name: wait for sync tasks to complete
+    action:
+      shell hammer --csv task list --search 'label = Actions::Katello::Repository::Sync and state = running'
+    register: running_sync_tasks
+    until: running_sync_tasks.stdout.find("running") == -1
+    delay: 60
+    retries: 60
+    changed_when: false
+
+  - name: get current content views
+    shell: hammer --csv content-view list --nondefault true | tail -n +2 | awk -F ',' '{print $2}'
+    register: current_content_views
+    changed_when: false
+
+  - name: create content views
+    command: hammer content-view create --name CV-RHEL{{ item.rhel_major }}-{{ item.name }}
+    when: item.name not in current_content_views.stdout
+    with_items: "{{ profiles }}"
+    register: create_content_views
+
+  - name: associate repositories to content views 
+    command: > 
+      hammer content-view add-repository 
+      --name CV-RHEL{{ item.0.rhel_major }}-{{ item.0.name }} 
+      --repository '{{ item.1.name }}' 
+      --product '{{ item.1.product }}'
+    with_subelements:
+    - "{{ profiles }}"
+    - repos
+    when: create_content_views.changed
+
+  - name: get current content views
+    shell: hammer --csv content-view list --nondefault true | tail -n +2 | awk -F ',' '{print $2}'
+    register: current_content_views
+    changed_when: false
+
+  - name: wait for publish tasks to complete
+    action:
+      shell hammer --csv task list --search 'label = Actions::Katello::ContentView::Publish and state = running'
+    register: running_sync_tasks
+    until: running_sync_tasks.stdout.find("running") == -1
+    delay: 60
+    retries: 60
+    changed_when: false
+
+  - name: publish all content views
+    command: hammer content-view publish --async --name {{ item }}
+    with_items: "{{ current_content_views.stdout_lines }}"
+
+  - name: wait for publish tasks to complete
+    action:
+      shell hammer --csv task list --search 'label = Actions::Katello::ContentView::Publish and state = running'
+    register: running_sync_tasks
+    until: running_sync_tasks.stdout.find("running") == -1
+    delay: 60
+    retries: 60
+    changed_when: false
+
+  - name: get current lifecycle environments
+    shell: hammer --csv lifecycle-environment list --library false | tail -n +2 | awk -F ',' '{print $2}'
+    register: current_lifecycle_environments
+    changed_when: false
+ 
+  # TODO: this task could be made with --async to increase speed but currently it would break because of the read lock that is put on each CV
+  - name: promote latest version of each content view to all lifecycle environments
+    command: >
+      hammer content-view version promote 
+      --from-lifecycle-environment Library
+      --to-lifecycle-environment {{ item[0] }} 
+      --content-view {{ item[1] }}
+      --force
+    with_nested:
+    - "{{ current_lifecycle_environments.stdout_lines }}"
+    - "{{ current_content_views.stdout_lines }}"
+
+  - name: get current activation keys
+    shell: hammer --csv activation-key list | tail -n +2 | awk -F ',' '{print $2}'
+    register: current_activation_keys
+    changed_when: false
+
+  - name: create activation keys
+    command: > 
+      hammer activation-key create 
+      --name AK-{{ item.0.name }}-RHEL{{ item.1.rhel_major }}-{{ item.1.name }} 
+      --lifecycle-environment {{ item.0.name }} 
+      --content-view CV-RHEL{{ item.1.rhel_major }}-{{ item.1.name }}
+    when: "'AK-{{ item.0.name }}-RHEL{{ item.1.rhel_major }}-{{ item.1.name }}' not in current_activation_keys.stdout"
+    with_nested:
+    - "{{ lifecycle_environments }}"
+    - "{{ profiles }}"
+    register: create_activation_keys
+
+  - name: set release version on activation keys
+    command: >
+      hammer activation-key update 
+      --name AK-{{ item.0.name }}-RHEL{{ item.1.rhel_major }}-{{ item.1.name }} 
+      --release-version {{ item.1.rhel_major }}Server
+    when: create_activation_keys.changed
+    with_nested:
+    - "{{ lifecycle_environments }}"
+    - "{{ profiles }}"
+
+  # TODO: This is not idempotent, since it will try to attach another subscription every time which is not working (though it works first run and skipped if no activation keys are added)
+  - name: attach subscriptions to activation keys
+    shell: >
+      hammer activation-key add-subscription 
+      --name 'AK-{{ item.0.name }}-RHEL{{ item.1.rhel_major }}-{{ item.1.name }}'
+      --subscription-id $(hammer --csv subscription list --search '{{ item.1.subscription }}' | tail -n +2 | awk -F ',' '{print $1}')
+    when: create_activation_keys.changed
+    with_nested:
+    - "{{ lifecycle_environments }}"
+    - "{{ profiles }}"
+
+  - name: get current host collections
+    shell: hammer --csv host-collection list | tail -n +2 | awk -F ',' '{print $2}'
+    register: current_host_collections
+    changed_when: false
+
+  - name: create host collections for each lifecycle environment
+    command: hammer host-collection create --name 'HC-{{ item.name }}'
+    when: "'HC-{{ item.name }}' not in current_host_collections.stdout"
+    with_items: "{{ lifecycle_environments }}"
+
+  - name: create host collections for each profile
+    command: hammer host-collection create --name 'HC-{{ item.name }}'
+    when: "'HC-{{ item.name }}' not in current_host_collections.stdout"
+    with_items: "{{ profiles }}"
+
+  - name: get current host groups
+    shell: hammer --csv hostgroup list | tail -n +2 | awk -F ',' '{print $3}'
+    register: current_host_groups
+    changed_when: false
+
+  - name: create host groups for lifecycle environments
+    command: >
+      hammer hostgroup create
+      --organization '{{ organization }}'
+      --name 'HG-{{ item.name }}'
+      --lifecycle-environment '{{ item.name }}'
+      --environment production
+      --content-source-id 1
+      --domain-id 1
+    when: "'HG-{{ item.name }}' not in current_host_groups.stdout"
+    with_items: "{{ lifecycle_environments }}"
+
+  # TODO: This is currently hard coded to only work with RHEL7. A similar task would have to be added for RHEL 5 or 6 if it should be used.
+  # The architecture and operatingsystem name are also hard coded to x86_64 and RedHat 7.3 respectively
+  - name: create a RHEL 7 host group under each lifecycle environment
+    command: >
+      hammer hostgroup create
+      --organization '{{ organization }}'
+      --name 'RHEL7'
+      --parent 'HG-{{ item.name }}'
+      --architecture 'x86_64'
+      --operatingsystem 'RedHat 7.3'
+    when: "'HG-{{ item.name }}/RHEL7' not in current_host_groups.stdout"
+    with_items: "{{ lifecycle_environments }}"
+
+  # TODO: Same here, also hard coded to only support RHEL7
+  - name: create host groups for each profile
+    shell: >
+      hammer hostgroup create 
+      --organization '{{ organization }}'
+      --name '{{ item.1.name }}'
+      --content-view 'CV-RHEL7-{{ item.1.name }}'
+      --parent-id $(hammer --csv hostgroup list --search 'title = HG-{{ item.0.name }}/RHEL7' | tail -n +2 | awk -F ',' '{print $1}')
+    when: "'HG-{{ item.0.name }}/RHEL7/{{ item.1.name }}' not in current_host_groups.stdout"
+    register: create_profile_host_groups
+    with_nested:
+    - "{{ lifecycle_environments }}"
+    - "{{ profiles }}"
+
+  - name: set activation key for each profile host group
+    shell: >
+      hammer hostgroup set-parameter
+      --hostgroup-title 'HG-{{ item.0.name }}/RHEL7/{{ item.1.name }}'
+      --name kt_activation_keys --value 'AK-{{ item.0.name }}-RHEL7-{{ item.1.name }}'
+    when: create_profile_host_groups.changed
+    with_nested:
+    - "{{ lifecycle_environments }}"
+    - "{{ profiles }}"
+
