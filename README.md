@@ -7,7 +7,7 @@ Install a minimal RHEL 7.3 (or later) according to the prerequisites for Satelli
 These playbooks presumes that they run locally on the host where Satellite should be installed.
 If this is not the case, the playbooks can be altered to be able to run from another node by removing the "connection: local" directive etc.
 
-This process presumes that your Satellite have access to redhat.com and fedoraproject.org
+This process presumes that your Satellite have access to redhat.com and fedoraproject.org.
 
 ### Register with subscription-manager
 I have intentionally left the registration steps manual because this may differ a lot between different environments. The following instructions can be seen as an example, but may not be exactly the same for you.
@@ -41,10 +41,10 @@ Reference: https://access.redhat.com/documentation/en-us/red_hat_satellite/6.2/h
 
 ## Usage
 
-### Make sure your satellite hostname is the only host in the "satellite" group in the hosts file. Replace "sat6" with your hostname, e.g.
+### hosts file
+Make sure your Satellite hostname is the only host in the "satellite" group in the hosts file. Replace "sat6" with your hostname, e.g:
 ```bash
 # sed -i "s/sat6/$(hostname)/" hosts
-
 # cat hosts
 [satellite]
 your-satellite.hostname.com
@@ -66,6 +66,8 @@ Now you are ready to execute the first playbook that updates your server and ins
 ```bash
 # ansible-playbook -i hosts sat6-install.yaml
 ```
+
+It may be wise to reboot your Satellite at this stage if yum updated packages that require reboot.
 
 ### Run sat6-configure.yaml playbook
 If the installation was successful, it is time to put some content in your Satellite. This is what takes the most time, but this is also where this automation saves you a lot of time. Again, make sure group_vars/satellite looks as you expect it to. All configuration are based on the repositories, profiles etc that are defined in there.
