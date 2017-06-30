@@ -1,11 +1,4 @@
 ---
-# this playbook can be used to fix all prerequisites and install a Satellite 6.2 server
-# you need to provide the following:
-# - deploy a RHEL 7 server according to the specifications in https://access.redhat.com/documentation/en-us/red_hat_satellite/6.2/html/installation_guide/preparing_your_environment_for_installation
-# - register the server with "subscription-manager register ..."
-# - attach a valid subscription for satellite 6 with e.g "subscription-manager attach --pool <id>"
-#
-# since the registration is much dependant on the environment, it is left as a prerequisite
 
 - hosts: satellite
   connection: local
@@ -67,13 +60,13 @@
 # more configuration can be added manually later, see "satellite-installer --help" for all options
 
   - name: run satellite-installer (this will take a while...)
-    command: "satellite-installer --foreman-initial-organization '{{ organization }}' --foreman-initial-location '{{ location }}' --foreman-admin-password '{{ admin_password }}'"
+    command: "satellite-installer --scenario satellite --foreman-initial-organization '{{ organization }}' --foreman-initial-location '{{ location }}' --foreman-admin-password '{{ admin_password }}'"
 
 # debug task to check installer command
 #  - name: run satellite-installer (this will take a while...)
 #    debug:
-#      msg: "satellite-installer --foreman-initial-organization '{{ organization }}' --foreman-initial-location '{{ location }}' --foreman-admin-password '{{ admin_password }}'"
+#      msg: "satellite-installer --scenario satellite --foreman-initial-organization '{{ organization }}' --foreman-initial-location '{{ location }}' --foreman-admin-password '{{ admin_password }}'"
 
   - name: notify user that installation is complete
     debug: 
-      msg: "The installation is now complete and it is time to configure your Satellite. This can be done with sat6-configure.yaml"
+      msg: "The installation is now complete. A reboot might be in place if yum updated packages that required reboot. After that it is time to configure your Satellite. This can be done with sat6-configure.yaml"

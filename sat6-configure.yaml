@@ -20,8 +20,11 @@
   - name: upload manifest
     command: hammer subscription upload --file {{ manifest }} 
 
+  - name: refresh manifest
+    command: hammer subscription refresh-manifest
+
   - name: enable rhel repositories
-    command:
+    command: >
       hammer repository-set enable 
       --product '{{ item.product }}' 
       --name '{{ item.product }}'
@@ -105,7 +108,7 @@
     register: running_sync_tasks
     until: running_sync_tasks.stdout.find("running") == -1
     delay: 60
-    retries: 60
+    retries: 600
     changed_when: false
 
   - name: sync all repositories
@@ -119,7 +122,7 @@
     register: running_sync_tasks
     until: running_sync_tasks.stdout.find("running") == -1
     delay: 60
-    retries: 60
+    retries: 600
     changed_when: false
 
   - name: get current content views
