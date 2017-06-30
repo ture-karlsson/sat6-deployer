@@ -10,9 +10,9 @@ If this is not the case, the playbooks can be altered to be able to run from ano
 This process presumes that your Satellite have access to redhat.com and fedoraproject.org
 
 ### Register with subscription-manager
-I have intentionally left the registration steps as manual because this may differ a lot between different environments. The following instructions can be seen as a guiding example
+I have intentionally left the registration steps manual because this may differ a lot between different environments. The following instructions can be seen as an example, but may not be exactly the same for you.
 
-Register with subsription-manager:
+Register with subscription-manager:
 ```bash
 # subscription-manager register
 ```
@@ -23,7 +23,7 @@ Find an available Satellite subscription you want to use and attach it with its 
 # subscription-manager attach --pool <pool ID of your Satellite subscription>
 ```
 
-reference: https://access.redhat.com/documentation/en-us/red_hat_satellite/6.2/html/installation_guide/installing_satellite_server
+Reference: https://access.redhat.com/documentation/en-us/red_hat_satellite/6.2/html/installation_guide/installing_satellite_server
 
 ### Install Ansible
 ```bash
@@ -57,10 +57,12 @@ manifest.zip
 ```
 
 ### group_vars/satellite
-The variable file group_vars/satellite contains all the variables that are used for the installation and configuration of the Satellite server. Make sure to read it through and update it to fit your needs.
+The variable file group_vars/satellite contains all the variables that are used for the installation and configuration of the Satellite server. Make sure to read it through and update it to fit your needs. This lets you define exactly what repositories to synchronize and all other configuration that will be set up in the Satellite.
+
+group_vars/satellite have a list of so called profiles. One profile is a group of repositories and certain subscriptions that a certain type of hosts use. A Content View will then be created for this profile as well as Activation Keys and Host Groups for ALL different Lifecycle Environments. There are 3 example profiles in group_vars/satellite. One for basic RHEL 7 servers (named Base) one for Ansible Tower servers (named Tower) and one for Openshift servers. By defining the Openshift profile for example, the sat6-configure.yaml playbook will create all content in Satellite you need to register Openshift servers in each Lifecycle Environment to have access to the specified repositories and consume the specified subscription. It also creates the required Host Groups for you.
 
 ### Run sat6-install.yaml playbook
-Now you are ready to execute the playbook that installs your Satellite server
+Now you are ready to execute the first playbook that updates your server and installs the Satellite software:
 ```bash
 # ansible-playbook -i hosts sat6-install.yaml
 ```
@@ -71,6 +73,7 @@ If the installation was successful, it is time to put some content in your Satel
 # ansible-playbook -i hosts sat6-configure.yaml
 ```
 
+### Outcome
 If sat6-configure.yaml runs successfully, the playbook have done the following for you:
 * uploaded your manifest
 * created all needed products and repositories
