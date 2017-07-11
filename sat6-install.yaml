@@ -70,3 +70,10 @@
   - name: notify user that installation is complete
     debug: 
       msg: "The installation is now complete. A reboot might be in place if yum updated packages that required reboot. After that it is time to configure your Satellite. This can be done with sat6-configure.yaml"
+  - name: run satellite-installer with proxy
+    command: >
+      --katello-proxy-url='{{ proxy_url }}' \
+      --katello-proxy-port='{{ proxy_port }}' \
+      {% if proxy_username is defined %} --katello-proxy-username='{{ proxy_username }}' \ {% endif %}
+      {% if proxy_password is defined %} --katello-proxy-password='{{ proxy_password }}' \ {% endif %}
+    when: proxy_url is defined

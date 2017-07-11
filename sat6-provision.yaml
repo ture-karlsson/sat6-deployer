@@ -1,0 +1,17 @@
+---
+- hosts: localhost
+  tasks:
+    - name: launch satellite instance
+      ec2:
+        key_name: '{{ public_key }}'
+        instance_type: '{{ instance_type }}'
+        image: '{{ ami_name }}'
+        wait: yes
+        wait_timeout: 500
+        count: 1
+        vpc_subnet_id: '{{ subnet_id }}'
+        assign_public_ip: no
+      register: ec2_instance
+
+    - 
+

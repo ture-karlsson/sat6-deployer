@@ -1,0 +1,29 @@
+---
+- hosts: satellite
+  
+  tasks:
+
+  - name: install nfs-utils and gss proxy
+    yum:
+      packages:
+        - nfs-utils
+        - gss-proxy
+        - sssd
+        - adcli
+        - realmd
+        - ipa-python
+      ensure: latest
+  - name: join the AD realm
+    command: >
+      realm join -v '{{ ad_realm }}'
+
+  - name: write /etc/ipa/default.conf
+    template:
+      src: templates/ipa/default.conf
+      dst: /etc/ipa/default.conf
+
+  - name: write /etc/net-keytab.conf
+    template:
+      src: templates/net-keytab.conf
+      dst: /etc/net-keytab.conf
+

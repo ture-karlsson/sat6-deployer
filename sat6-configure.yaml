@@ -3,7 +3,6 @@
   connection: local
   
   tasks:
-
   - name: set hammer credentials
     template:
       src: templates/cli_config.yml.j2
@@ -19,9 +18,6 @@
 
   - name: upload manifest
     command: hammer subscription upload --file {{ manifest }} 
-
-  - name: refresh manifest
-    command: hammer subscription refresh-manifest
 
   - name: enable rhel repositories
     command: >
@@ -48,11 +44,6 @@
     register: current_products
     changed_when: false
 
-  - name: create custom products
-    command: hammer product create --name '{{ item.name }}'
-    when: item.name not in current_products.stdout
-    with_items: "{{ custom_products }}"
-
   - name: download GPG keys
     get_url:
       url: "{{ item.1.gpg_key }}"
@@ -78,18 +69,6 @@
     register: current_repositories
     changed_when: false
 
-  - name: create custom repositories
-    command: >
-      hammer repository create 
-      --content-type {{ item.1.content_type }} 
-      --url {{ item.1.url }} 
-      --gpg-key {{ item.1.gpg_key.split('/')[-1] }} 
-      --product '{{ item.0.name }}' 
-      --name '{{ item.1.name }}'
-    when: item.1.name not in current_repositories.stdout
-    with_subelements:
-    - "{{ custom_products }}"
-    - repositories 
 
   - name: get current repository IDs
     shell: hammer --csv repository list | tail -n +2 | awk -F ',' '{print $1}'
@@ -218,11 +197,13 @@
     - "{{ lifecycle_environments }}"
     - "{{ profiles }}"
 
+      
+
   # TODO: This is not idempotent, since it will try to attach another subscription every time which is not working (though it works first run and skipped if no activation keys are added)
   - name: attach subscriptions to activation keys
     shell: >
       hammer activation-key add-subscription 
-      --name 'AK-{{ item.0.name }}-RHEL{{ item.1.rhel_major }}-{{ item.1.name }}'
+      --name 'AK-{{ item.0.name }}-RHEL{{ item.1.rhel_major }}-{{ item.1.name }}' 
       --subscription-id $(hammer --csv subscription list --search '{{ item.1.subscription }}' | tail -n +2 | awk -F ',' '{print $1}')
     when: create_activation_keys.changed
     with_nested:
