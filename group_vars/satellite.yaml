@@ -17,6 +17,11 @@ open_ports:
 - 8140/tcp
 - 9090/tcp
 
+rhsm_username:
+rhsm_password:
+rhsm_pool_id:
+satellite_hostname:
+
 # name of the organization that will be configured
 organization: ""
 
