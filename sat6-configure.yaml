@@ -1,7 +1,5 @@
 ---
 - hosts: satellite
-  connection: local
-  
   tasks:
   - name: set hammer credentials
     template:

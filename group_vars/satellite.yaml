@@ -17,19 +17,19 @@ open_ports:
 - 8140/tcp
 - 9090/tcp
 
-rhsm_username:
-rhsm_password:
-rhsm_pool_id:
-satellite_hostname:
+proxy_hostname: 
+proxy_port: 8080
+rhsm_pool_id: 
+satellite_hostname: 
 
 # name of the organization that will be configured
 organization: ""
 
 # one initial location (more can be added later)
-location: ""
+location: "AWS Cloud"
 
 # initial password for the adminstrator account (can be changed later)
-admin_password: ""
+admin_password: "redhat123"
 
 ###
 # variables for sat6-configure.yaml
@@ -104,9 +104,9 @@ lifecycle_environments:
   name: DEV
 
 - previous: DEV
-  name: TEST
+  name: CC
 
-- previous: TEST
+- previous: CC
   name: PROD
 
 # define what kind of server profiles you want to create. a profile defines a RHEL major version, a set of repositories and one or more subscriptions.

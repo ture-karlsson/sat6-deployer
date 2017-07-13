@@ -1,0 +1,36 @@
+---
+- hosts: localhost
+  connection: local
+  become: False
+  vars:
+    region: eu-central-1 
+    aws_access_key: 
+    aws_secret_key: 
+    key_name: 
+    instance_type: t2.xlarge
+    ami_id: ami- 
+    vpc_id: vpc-
+    vpc_subnet_id: subnet
+    security_group_name: sg_satellite
+    client_network_groups: ['10.25.72.0/22', '10.26.192.0/18']
+    instance_ssh_private_key_file: "files/satellite--keypair.pem"
+    instance_ssh_user: ec2-user
+  tasks:
+    - include: ec2-create-instance.yaml
+  tags: provision
+
+- hosts: just_created
+  vars:
+    rhsm_pool_id: 
+  vars_files:
+    - group_vars/satellite.yaml
+  vars_prompt:
+    - name: rhsm_username
+      private: no
+      prompt: "Enter Red Hat Account username"
+    - name: rhsm_password
+      prompt: "Enter Red Hat Account password"
+      private: yes
+  tasks:
+    - include: sat6-install.yaml
+  tags: installation

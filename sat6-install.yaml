@@ -1,51 +1,62 @@
 ---
-
-- hosts: satellite
-  connection: local
-  tasks:
-
   - name: create xfs fs on drive
     filesystem: 
       fstype: xfs
-      dev: /dev/sdb
+      dev: /dev/xvdb
   
   - name: create xfs fs on drive
     filesystem: 
       fstype: xfs
-      dev: /dev/sdc
+      dev: /dev/xvdc
 
   - name: create xfs fs on drive
     filesystem: 
       fstype: xfs
-      dev: /dev/sdd
+      dev: /dev/xvdd
 
   - name: mount /var/lib/mongodb
     mount:
-      src: /dev/sdb
+      src: /dev/xvdb
       path: /var/lib/mongodb
-      state: present
+      state: mounted
       fstype: xfs
 
   - name: mount /var/lib/pgsql
     mount:
-      src: /dev/sdc
+      src: /dev/xvdc
       path: /var/lib/pgsql
-      state: present
+      state: mounted
       fstype: xfs
 
   - name: mount /var/lib/pulp
     mount:
-      src: /dev/sdd
+      src: /dev/xvdd
       path: /var/lib/pulp
-      state: present
+      state: mounted
       fstype: xfs
 
+  - name: add proxy to rhsm
+    lineinfile:
+      path: /etc/rhsm/rhsm.conf
+      line: 'proxy_hostname = {{ proxy_hostname }}'
+      regexp: '^proxy_hostname \='
+      state: present
+
+  - name: add proxy port to rhsm
+    lineinfile:
+      path: /etc/rhsm/rhsm.conf
+      line: 'proxy_port = {{ proxy_port }}'
+      regexp: '^proxy_port \='
+      state: present
 
   - name: subscribe to access.redhat.com, will take a while..
     redhat_subscription:
       state: present
       username: '{{ rhsm_username }}'
       password: '{{ rhsm_password }}'
+
+  - name: attach to Satellite Pool
+    command: "subscription-manager attach --pool {{ rhsm_pool_id }}"
 
   - name: disable all repositories
     command: "subscription-manager repos --disable '*'"
@@ -129,8 +140,8 @@
       msg: "The installation is now complete. A reboot might be in place if yum updated packages that required reboot. After that it is time to configure your Satellite. This can be done with sat6-configure.yaml"
   - name: run satellite-installer with proxy
     command: >
-      --katello-proxy-url='{{ proxy_url }}' \
+      --katello-proxy-url='{{ proxy_hostname }}' \
       --katello-proxy-port='{{ proxy_port }}' \
       {% if proxy_username is defined %} --katello-proxy-username='{{ proxy_username }}' \ {% endif %}
       {% if proxy_password is defined %} --katello-proxy-password='{{ proxy_password }}' \ {% endif %}
-    when: proxy_url is defined
+    when: proxy_hostname is defined
