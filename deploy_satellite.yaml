@@ -1,27 +1,27 @@
 ---
+# This playbook calls other plays in the order below
+# It will create a instance in AWS
+# Set up prerequisits for the Satellite installation on the new instance
+# Install Satellite with satellite-installer
+# Configure the Satellite installation and start syncing repositories
+
+
 - hosts: localhost
   connection: local
   become: False
-  vars:
-    region: eu-central-1 
-    aws_access_key: 
-    aws_secret_key: 
-    key_name: 
-    instance_type: t2.xlarge
-    ami_id: ami- 
-    vpc_id: vpc-
-    vpc_subnet_id: subnet
-    security_group_name: sg_satellite
-    client_network_groups: ['10.25.72.0/22', '10.26.192.0/18']
-    instance_ssh_private_key_file: "files/satellite--keypair.pem"
-    instance_ssh_user: ec2-user
+  vars_files:
+    - group_vars/satellite.yaml
   tasks:
     - include: ec2-create-instance.yaml
   tags: provision
 
+# The just_created hostgroup is a temporary group, added in the 
+# ec2-create-instance play.
+# just_created won't be accessible after the play has finished
+# Instead you can create a host entry in the host file
+# and run the sat6-*-standalone.yaml playbooks
+# if you want to debug or rerun.
 - hosts: just_created
-  vars:
-    rhsm_pool_id: 
   vars_files:
     - group_vars/satellite.yaml
   vars_prompt:
@@ -34,3 +34,10 @@
   tasks:
     - include: sat6-install.yaml
   tags: installation
+
+- hosts: just_created
+  vars_files:
+    - group_vars/satellite.yaml
+  tasks:
+    - include: sat6-configure.yaml
+  tags: configuration

@@ -60,7 +60,7 @@
         count: 1
         group: '{{ security_group_name }}'
         instance_tags:
-          Name: satellite 
+          Name: '{{ instance_name_tag }}'
         volumes:
         - device_name: /dev/xvdb
           volume_size: 50
@@ -108,6 +108,9 @@
         timeout: 320
         state: started
 
+    - name: pause for user input
+      pause: 
+        prompt: "Now we have to add the DNS entry for {{ satellite_hostname }} on {{ instance_private_ip }} in route53. Press  Enter  when the DNS entry has been added."
         
     
  
