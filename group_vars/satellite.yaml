@@ -1,10 +1,92 @@
 ---
 
-###
-# variables for sat6-install.yaml
-###
+##########################################
+# variables for ec2-create-instance.yaml #
+##########################################
+
+#############################################
+# CAUTION!!                                 #
+# AWS keys, tokens is very sensitive data   #
+# Think twice before checking this into SCM #
+aws_access_key: 
+aws_secret_key: 
+#############################################
+
+# Which region the instance should be placed in
+region: eu-central-1 
+
+# Recommended instance type for Satellite
+# is at least t2.xlarge
+instance_type: t2.large
+
+# The AMI id that should be used when creating the instance
+ami_id: ami-
+
+# Which VPC the instance should be created in
+vpc_id: vpc-
+
+# Choose which VPC subnet to be used
+vpc_subnet_id: subnet-
+
+# What the security group created should be called
+security_group_name: sg_satellite
+
+# The CIDR of all hosts that should be able to communicate with Satellite
+# This will add entrys to the security group where it allows the following CIDR. 
+# Specified as an array. eg. ['10.0.0.0/8','192.168.0.0/24']
+client_network_groups: ['10.25.72.0/22', '10.26.192.0/18']
+
+# Specify the name of the keypair name from AWS you want to use
+# !This key needs to be downloaded and placed in the path below!
+key_name: 
+
+# file path to the SSH key that the instance was configured with
+# Ansible needs this in order to connect to the host
+instance_ssh_private_key_file: "files/"
+
+# The username used to connect to the instance with
+# This will be added to the ansible connection settings on the temporary host 
+instance_ssh_user: ec2-user
+
+# What the Name of the instance should be 
+instance_name_tag: satellite
+
+#####################################
+# variables for sat6-install.yaml   #
+#####################################
+
+
+# If proxy is to be used, fill in the proxy hostname and portname separatly
+# The playbooks will pick up if these are "not empty"
+# Important, only FQDN, no protocol
+proxy_hostname: 
+proxy_port: 8080
+
+# Satellite Subscription Pool ID
+# You can retrive this by either going to the Customer Portal and list info about the subscription
+# or, you can do a:
+# subscription-manager list --available | less
+# on a registered host and then search for Satellite
+rhsm_pool_id: 
+
+# Satellite FQDN
+# Will be used by the route53 module to add a DNS entry in AWS (route53)
+# aswell as setting the hostname on the provisioned host
+satellite_hostname: 
+
+# name of the organization that will be configured
+# This can#t easily be changed afterwards
+organization: ""
+
+# one initial location (more can be added later)
+location: ""
+
+# initial password for the adminstrator account (can be changed later)
+admin_password: "redhat123"
 
 # firewalld ports to open
+# NOT ACTUALLY USED, as the AMI used doesn't have
+# firewalld or iptables enabled
 open_ports:
 - 53/tcp
 - 53/udp
@@ -17,21 +99,17 @@ open_ports:
 - 8140/tcp
 - 9090/tcp
 
-# name of the organization that will be configured
-organization: "Tures Org"
 
-# one initial location (more can be added later)
-location: "Malmo"
-
-# initial password for the adminstrator account (can be changed later)
-admin_password: "redhat123"
-
-###
-# variables for sat6-configure.yaml
-###
+#####################################
+# variables for sat6-configure.yaml #
+#####################################
 
 # add path to where you put your manifest. this file have to be put here manually before running sat6-configure.yaml
 manifest: files/manifest.zip
+
+# rhel_subscription_name 
+rhel_subscription_name: "Red Hat Enterprise Linux Server, Premium (Physical or Virtual Nodes)" 
+openshift_subscription_name: "Red Hat OpenShift Container Platform, Premium, 2-Core"
 
 # add a list of what RHEL repositories you want to sync
 # specify product and repository name, architecture (x86_64 or i386 etc) and optionally release version for repositories that require that
@@ -53,11 +131,6 @@ rhel_repositories:
 - product: Red Hat Enterprise Linux Server
   name: Red Hat Enterprise Linux 7 Server - Extras (RPMs)
   basearch: x86_64
-
-- product: Red Hat Enterprise Linux Server
-  name: Red Hat Enterprise Linux 7 Server (Kickstart) 
-  basearch: x86_64
-  releasever: 7.3
 
 - product: Red Hat OpenShift Container Platform
   name: Red Hat OpenShift Container Platform 3.5 (RPMs)
@@ -103,9 +176,9 @@ lifecycle_environments:
   name: DEV
 
 - previous: DEV
-  name: TEST
+  name: CC
 
-- previous: TEST
+- previous: CC
   name: PROD
 
 # define what kind of server profiles you want to create. a profile defines a RHEL major version, a set of repositories and one or more subscriptions.
@@ -120,30 +193,18 @@ profiles:
   repos:
   - name: Red Hat Enterprise Linux 7 Server RPMs x86_64 7Server
     product: Red Hat Enterprise Linux Server
+    repo_name: rhel-7-server-rpms
   - name: Red Hat Satellite Tools 6.2 for RHEL 7 Server RPMs x86_64
     product: Red Hat Enterprise Linux Server
-  - name: Red Hat Enterprise Linux 7 Server Kickstart x86_64 7.3
-    product: Red Hat Enterprise Linux Server
-  subscription: Red Hat Enterprise Linux Server, Standard (Physical or Virtual Nodes)
- 
-- name: Tower
-  rhel_major: 7
-  repos:
-  - name: Red Hat Enterprise Linux 7 Server RPMs x86_64 7Server
-    product: Red Hat Enterprise Linux Server
-  - name: Red Hat Satellite Tools 6.2 for RHEL 7 Server RPMs x86_64
-    product: Red Hat Enterprise Linux Server
-  - name: Red Hat Enterprise Linux 7 Server Kickstart x86_64 7.3
-    product: Red Hat Enterprise Linux Server
-  - name: Red Hat Enterprise Linux 7 Server - Optional RPMs x86_64 7Server
-    product: Red Hat Enterprise Linux Server
-  - name: Red Hat Enterprise Linux 7 Server - Extras RPMs x86_64
-    product: Red Hat Enterprise Linux Server
-  - name: EPEL7
-    product: Extra Packages for Enterprise Linux
-  subscription: Red Hat Enterprise Linux Server, Standard (Physical or Virtual Nodes)
+    repo_name: rhel-7-server-satellite-tools-6.2-rpms
+  - name: EPEL7 
+    product: Extra Packages for Enterprise Linux 
+  subscriptions:
+    - "{{ rhel_subscription_name }}"
+    - "EPEL"
+    - "Smart Management"
 
-- name: Openshift
+- name: OpenShift
   rhel_major: 7
   repos:
   - name: Red Hat Enterprise Linux 7 Server RPMs x86_64 7Server
@@ -158,5 +219,8 @@ profiles:
     product: Red Hat Enterprise Linux Fast Datapath
   - name: Red Hat OpenShift Container Platform 3.5 RPMs x86_64
     product: Red Hat OpenShift Container Platform
-  subscription: OpenShift Enterprise Infrastructure
+    repo_name: rhel-7-server-ose-3.5-rpms
+  subscriptions:
+    - "{{ openshift_subscription_name }}"
+    - "Smart Management"
 

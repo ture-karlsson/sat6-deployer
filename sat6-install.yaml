@@ -1,8 +1,64 @@
 ---
+  - name: create xfs fs on drive
+    filesystem: 
+      fstype: xfs
+      dev: /dev/xvdb
+  
+  - name: create xfs fs on drive
+    filesystem: 
+      fstype: xfs
+      dev: /dev/xvdc
 
-- hosts: satellite
-  connection: local
-  tasks:
+  - name: create xfs fs on drive
+    filesystem: 
+      fstype: xfs
+      dev: /dev/xvdd
+
+  - name: mount /var/lib/mongodb
+    mount:
+      src: /dev/xvdb
+      path: /var/lib/mongodb
+      state: mounted
+      fstype: xfs
+
+  - name: mount /var/lib/pgsql
+    mount:
+      src: /dev/xvdc
+      path: /var/lib/pgsql
+      state: mounted
+      fstype: xfs
+
+  - name: mount /var/lib/pulp
+    mount:
+      src: /dev/xvdd
+      path: /var/lib/pulp
+      state: mounted
+      fstype: xfs
+
+  - name: add proxy to rhsm
+    lineinfile:
+      path: /etc/rhsm/rhsm.conf
+      line: 'proxy_hostname = {{ proxy_hostname }}'
+      regexp: '^proxy_hostname \='
+      state: present
+
+  - name: add proxy port to rhsm
+    lineinfile:
+      path: /etc/rhsm/rhsm.conf
+      line: 'proxy_port = {{ proxy_port }}'
+      regexp: '^proxy_port \='
+      state: present
+
+  - block:
+    - name: subscribe to access.redhat.com, will take a while..
+      redhat_subscription:
+        state: present
+        username: '{{ rhsm_username }}'
+        password: '{{ rhsm_password }}'
+  
+    - name: attach to Satellite Pool
+      command: "subscription-manager attach --pool {{ rhsm_pool_id }}"
+    tags: subscription
 
   - name: disable all repositories
     command: "subscription-manager repos --disable '*'"
@@ -10,19 +66,36 @@
   - name: enable satellite 6 repositories
     command: "subscription-manager repos --enable rhel-7-server-rpms --enable rhel-server-rhscl-7-rpms --enable rhel-7-server-satellite-6.2-rpms"
 
-  - name: make sure firewalld is enabled and running
-    service:
-      name: firewalld
-      state: started
-      enabled: true
+  - name: remove amazon subman plugins
+    yum: 
+      name: rh-amazon-rhui*
+      state: absent
 
-  - name: open firewalld ports
-    firewalld:
-      immediate: yes
-      permanent: yes
-      state: enabled
-      port: "{{ item }}"
-    with_items: "{{ open_ports }}" 
+  - name: install ntp
+    yum:
+      name: chrony
+      state: latest
+
+  - name: make sure chrony runs
+    service:
+      state: started
+      name: chronyd
+
+
+      #
+      #  - name: make sure firewalld is enabled and running
+      #    service:
+      #      name: firewalld
+      #      state: started
+      #      enabled: true
+      #
+      #  - name: open firewalld ports
+      #    firewalld:
+      #      immediate: yes
+      #      permanent: yes
+      #      state: enabled
+      #      port: "{{ item }}"
+      #    with_items: "{{ open_ports }}" 
 
   - name: make sure selinux is in enforcing mode
     selinux:
@@ -31,6 +104,8 @@
 
 # these tasks verify that DNS is configured properly
 # if any of these tasks fail, the installation won't complete successully
+  - name: set hostname
+    command: "hostnamectl set-hostname {{ satellite_hostname }}"
 
   - name: verify localhost resolution
     command: "ping -c1 localhost"
@@ -70,3 +145,22 @@
   - name: notify user that installation is complete
     debug: 
       msg: "The installation is now complete. A reboot might be in place if yum updated packages that required reboot. After that it is time to configure your Satellite. This can be done with sat6-configure.yaml"
+  - name: run satellite-installer with proxy
+    command: >
+      satellite-installer \
+      --katello-proxy-url=http://'{{ proxy_hostname }}' 
+      --katello-proxy-port='{{ proxy_port }}' 
+      {% if proxy_username is defined %} --katello-proxy-username='{{ proxy_username }}' {% endif %}
+      {% if proxy_password is defined %} --katello-proxy-password='{{ proxy_password }}' {% endif %}
+    when: proxy_hostname is defined
+
+  - name: set global proxy vars
+    lineinfile:
+      path: /etc/environment
+      line: "https_proxy={{ proxy_hostname }}:{{ proxy_port }}"
+    when: proxy_hostname is defined
+  - name: set global proxy vars
+    lineinfile:
+      path: /etc/environment
+      line: "http_proxy={{ proxy_hostname }}:{{ proxy_port }}"
+    when: proxy_hostname is defined

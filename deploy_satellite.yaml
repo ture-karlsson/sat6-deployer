@@ -1,0 +1,43 @@
+---
+# This playbook calls other plays in the order below
+# It will create a instance in AWS
+# Set up prerequisits for the Satellite installation on the new instance
+# Install Satellite with satellite-installer
+# Configure the Satellite installation and start syncing repositories
+
+
+- hosts: localhost
+  connection: local
+  become: False
+  vars_files:
+    - group_vars/satellite.yaml
+  tasks:
+    - include: ec2-create-instance.yaml
+  tags: provision
+
+# The just_created hostgroup is a temporary group, added in the 
+# ec2-create-instance play.
+# just_created won't be accessible after the play has finished
+# Instead you can create a host entry in the host file
+# and run the sat6-*-standalone.yaml playbooks
+# if you want to debug or rerun.
+- hosts: just_created
+  vars_files:
+    - group_vars/satellite.yaml
+  vars_prompt:
+    - name: rhsm_username
+      private: no
+      prompt: "Enter Red Hat Account username"
+    - name: rhsm_password
+      prompt: "Enter Red Hat Account password"
+      private: yes
+  tasks:
+    - include: sat6-install.yaml
+  tags: installation
+
+- hosts: just_created
+  vars_files:
+    - group_vars/satellite.yaml
+  tasks:
+    - include: sat6-configure.yaml
+  tags: configuration

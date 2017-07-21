@@ -1,0 +1,13 @@
+---
+- hosts: satellite
+  vars_files:
+    - group_vars/satellite.yaml
+  vars_prompt:
+    - name: rhsm_username
+      private: no
+      prompt: "Enter Red Hat Account username"
+    - name: rhsm_password
+      prompt: "Enter Red Hat Account password"
+      private: yes
+  tasks:
+    - include: sat6-install.yaml

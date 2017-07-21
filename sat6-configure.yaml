@@ -1,9 +1,4 @@
 ---
-- hosts: satellite
-  connection: local
-  
-  tasks:
-
   - name: set hammer credentials
     template:
       src: templates/cli_config.yml.j2
@@ -17,17 +12,26 @@
   - name: add hammer organization default
     command: "hammer defaults add --param-name organization_id --param-value {{ organization_id.stdout }}"
 
-  - name: upload manifest
-    command: hammer subscription upload --file {{ manifest }} 
+  - name: create manifest folder
+    file:
+      state: directory
+      path: /root/manifest/
+      owner: root
+      group: root
 
-  - name: refresh manifest
-    command: hammer subscription refresh-manifest
+  - name: transfer manifest
+    copy:
+      src: files/manifest.zip
+      dest: /root/manifest/manifest.zip
+
+  - name: upload manifest
+    command: hammer subscription upload --file /root/manifest/manifest.zip
 
   - name: enable rhel repositories
     command: >
       hammer repository-set enable 
       --product '{{ item.product }}' 
-      --name '{{ item.product }}'
+      --name '{{ item.name }}'
       --basearch '{{ item.basearch }}'
       {% if item.releasever is defined %} --releasever '{{ item.releasever }}'{% endif %}
     with_items: "{{ rhel_repositories }}"
@@ -48,15 +52,23 @@
     register: current_products
     changed_when: false
 
-  - name: create custom products
-    command: hammer product create --name '{{ item.name }}'
-    when: item.name not in current_products.stdout
-    with_items: "{{ custom_products }}"
+  - name: create custom products 
+    command: hammer product create --name '{{ item.name }}' 
+    when: item.name not in current_products.stdout 
+    with_items: "{{ custom_products }}" 
 
+
+  - name: create gpg folder
+    file:
+      state: directory
+      path: /root/gpg-keys
+      owner: root
+      group: root
+      
   - name: download GPG keys
     get_url:
       url: "{{ item.1.gpg_key }}"
-      dest: "files/{{ item.1.gpg_key.split('/')[-1] }}"
+      dest: "/root/gpg-keys/{{ item.1.gpg_key.split('/')[-1] }}"
     with_subelements:
     - "{{ custom_products }}"
     - repositories
@@ -67,7 +79,7 @@
     changed_when: false
 
   - name: create GPG keys
-    shell: hammer gpg create --name {{ item.1.gpg_key.split('/')[-1] }} --key files/{{ item.1.gpg_key.split('/')[-1] }}
+    shell: hammer gpg create --name {{ item.1.gpg_key.split('/')[-1] }} --key /root/gpg-keys/{{ item.1.gpg_key.split('/')[-1] }}
     when: item.1.gpg_key.split('/')[-1] not in current_gpg_keys.stdout
     with_subelements:
     - "{{ custom_products }}"
@@ -78,18 +90,6 @@
     register: current_repositories
     changed_when: false
 
-  - name: create custom repositories
-    command: >
-      hammer repository create 
-      --content-type {{ item.1.content_type }} 
-      --url {{ item.1.url }} 
-      --gpg-key {{ item.1.gpg_key.split('/')[-1] }} 
-      --product '{{ item.0.name }}' 
-      --name '{{ item.1.name }}'
-    when: item.1.name not in current_repositories.stdout
-    with_subelements:
-    - "{{ custom_products }}"
-    - repositories 
 
   - name: get current repository IDs
     shell: hammer --csv repository list | tail -n +2 | awk -F ',' '{print $1}'
@@ -125,7 +125,7 @@
     retries: 600
     changed_when: false
 
-  - name: get current content views
+  - name: get current content views after
     shell: hammer --csv content-view list --nondefault true | tail -n +2 | awk -F ',' '{print $2}'
     register: current_content_views
     changed_when: false
@@ -152,14 +152,6 @@
     register: current_content_views
     changed_when: false
 
-  - name: wait for publish tasks to complete
-    action:
-      shell hammer --csv task list --search 'label = Actions::Katello::ContentView::Publish and state = running'
-    register: running_sync_tasks
-    until: running_sync_tasks.stdout.find("running") == -1
-    delay: 60
-    retries: 60
-    changed_when: false
 
   - name: publish all content views
     command: hammer content-view publish --async --name {{ item }}
@@ -190,44 +182,98 @@
     with_nested:
     - "{{ current_lifecycle_environments.stdout_lines }}"
     - "{{ current_content_views.stdout_lines }}"
+  - block:
+    - name: get current activation keys
+      shell: hammer --csv activation-key list | tail -n +2 | awk -F ',' '{print $2}'
+      register: current_activation_keys
+      changed_when: false
+  
+    - name: create activation keys
+      command: > 
+        hammer activation-key create 
+        --name AK-{{ item.0.name }}-RHEL{{ item.1.rhel_major }}-{{ item.1.name }} 
+        --lifecycle-environment {{ item.0.name }} 
+        --content-view CV-RHEL{{ item.1.rhel_major }}-{{ item.1.name }}
+      when: "'AK-{{ item.0.name }}-RHEL{{ item.1.rhel_major }}-{{ item.1.name }}' not in current_activation_keys.stdout"
+      with_nested:
+      - "{{ lifecycle_environments }}"
+      - "{{ profiles }}"
+      register: create_activation_keys
+  
+    # Ugly hardcoded workaround to create Activation Key for OpenShift Master/Infra nodes
+    # We don't want to use Profiles for this as it would mean an additional Content View
+    # And it's supposed to be the same
+    - name: create openshift master activation-key
+      command: > 
+        hammer activation-key create 
+        --name AK-{{ item.name }}-RHEL7-OpenShift-MasterInfra
+        --lifecycle-environment {{ item.name }} 
+        --content-view CV-RHEL7-OpenShift
+      when: "'AK-{{ item.name }}-RHEL7-OpenShift-MasterInfra' not in current_activation_keys.stdout"
+      with_items:
+      - "{{ lifecycle_environments }}"
+  
+  
+    - name: set release version on activation keys
+      command: >
+        hammer activation-key update 
+        --name AK-{{ item.0.name }}-RHEL{{ item.1.rhel_major }}-{{ item.1.name }} 
+        --release-version {{ item.1.rhel_major }}Server
+      when: create_activation_keys.changed
+      with_nested:
+      - "{{ lifecycle_environments }}"
+      - "{{ profiles }}"
+  
+  
+    # TODO: This is not idempotent, since it will try to attach another subscription every time which is not working (though it works first run and skipped if no activation keys are added)
+    - name: attach subscriptions to activation keys
+      shell: >
+        hammer activation-key add-subscription 
+        --name 'AK-{{ item.0.name }}-RHEL{{ item.1.rhel_major }}-{{ item.1.name }}' 
+        --subscription-id $(hammer --csv subscription list --search '{{ item.1.subscriptions.0 }}' | tail -n +2 | awk -F ',' '{print $1}')
+      when: create_activation_keys.changed
+      with_nested:
+      - "{{ lifecycle_environments }}"
+      - "{{ profiles }}"
+      ignore_errors: yes
+  
+    # REALLY ugly extra tasks, but since we cant do nested loops with subelements, well have to do with this
+    # Repeating the above for when the proofile contains more than one entry in its subscription list
+    # Note item.1.subscription 1 instead of 0
+    - name: attach second subscriptions to activation keys
+      shell: >
+        hammer activation-key add-subscription 
+        --name 'AK-{{ item.0.name }}-RHEL{{ item.1.rhel_major }}-{{ item.1.name }}' 
+        --subscription-id $(hammer --csv subscription list --search '{{ item.1.subscriptions.1 }}' | tail -n +2 | awk -F ',' '{print $1}')
+      when: create_activation_keys.changed and item.1.subscriptions|length > 1
+      with_nested:
+      - "{{ lifecycle_environments }}"
+      - "{{ profiles }}"
+      ignore_errors: yes
 
-  - name: get current activation keys
-    shell: hammer --csv activation-key list | tail -n +2 | awk -F ',' '{print $2}'
-    register: current_activation_keys
-    changed_when: false
-
-  - name: create activation keys
-    command: > 
-      hammer activation-key create 
-      --name AK-{{ item.0.name }}-RHEL{{ item.1.rhel_major }}-{{ item.1.name }} 
-      --lifecycle-environment {{ item.0.name }} 
-      --content-view CV-RHEL{{ item.1.rhel_major }}-{{ item.1.name }}
-    when: "'AK-{{ item.0.name }}-RHEL{{ item.1.rhel_major }}-{{ item.1.name }}' not in current_activation_keys.stdout"
-    with_nested:
-    - "{{ lifecycle_environments }}"
-    - "{{ profiles }}"
-    register: create_activation_keys
-
-  - name: set release version on activation keys
-    command: >
-      hammer activation-key update 
-      --name AK-{{ item.0.name }}-RHEL{{ item.1.rhel_major }}-{{ item.1.name }} 
-      --release-version {{ item.1.rhel_major }}Server
-    when: create_activation_keys.changed
-    with_nested:
-    - "{{ lifecycle_environments }}"
-    - "{{ profiles }}"
-
-  # TODO: This is not idempotent, since it will try to attach another subscription every time which is not working (though it works first run and skipped if no activation keys are added)
-  - name: attach subscriptions to activation keys
-    shell: >
-      hammer activation-key add-subscription 
-      --name 'AK-{{ item.0.name }}-RHEL{{ item.1.rhel_major }}-{{ item.1.name }}'
-      --subscription-id $(hammer --csv subscription list --search '{{ item.1.subscription }}' | tail -n +2 | awk -F ',' '{print $1}')
-    when: create_activation_keys.changed
-    with_nested:
-    - "{{ lifecycle_environments }}"
-    - "{{ profiles }}"
+    - name: attach third subscription to activation keys
+      shell: >
+        hammer activation-key add-subscription 
+        --name 'AK-{{ item.0.name }}-RHEL{{ item.1.rhel_major }}-{{ item.1.name }}' 
+        --subscription-id $(hammer --csv subscription list --search '{{ item.1.subscriptions.2 }}' | tail -n +2 | awk -F ',' '{print $1}')
+      when: create_activation_keys.changed and item.1.subscriptions|length > 2
+      with_nested:
+      - "{{ lifecycle_environments }}"
+      - "{{ profiles }}"
+      ignore_errors: yes
+  
+    # Tasks to add the Openshift Master Infrastructure sub to the corresponding keys.
+    # As the key is created without a profile, it won't get picked up in the above loops.
+    - name: attach OpenShift Master/Infra sub to key
+      shell: >
+        hammer activation-key add-subscription 
+        --name 'AK-{{ item.name }}-RHEL7-OpenShift-MasterInfra'
+        --subscription-id $(hammer --csv subscription list --search 'Red Hat OpenShift Container Platform Broker/Master Infrastructure' | tail -n +2 | awk -F ',' '{print $1}')
+      when: create_activation_keys.changed 
+      with_items:
+      - "{{ lifecycle_environments }}"
+    tags: activation-keys
+    
 
   - name: get current host collections
     shell: hammer --csv host-collection list | tail -n +2 | awk -F ',' '{print $2}'

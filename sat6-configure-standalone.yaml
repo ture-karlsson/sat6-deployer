@@ -1,0 +1,6 @@
+---
+ - hosts: satellite
+   vars_files:
+     - group_vars/satellite.yaml
+   tasks:
+     - include: sat6-configure.yaml
