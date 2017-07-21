@@ -1,5 +1,7 @@
 # sat6-deployer
 This repository contains some playbooks to spin up a new AWS instance, install Satellite 6 server on it and automatically configure content in it based on a configuration file specified by the user.
+Initially forked from ture-karlsson/sat6-deployer.
+Modified to also include ec2 instance creation and to be executed on a remote host.
 
 ## Prerequisites
 These playbooks requires that the host executing the playbook runs have access to the AWS API and to the created instance over SSH.
@@ -74,11 +76,18 @@ This is to be executed like:
 ```
 ### files/
 This folder should contain 
-manifest.zip - The Satellite manifest downloaded from the Red Hat Customer Portal
-private_key.pem (The  AWS private key file .pem file that is used, make sure the correct file path and name is in the group_vars/satellite.yaml, aswell as the inventory file if you need to run the standalone playbooks).
+* manifest.zip - The Satellite manifest downloaded from the Red Hat Customer Portal
+* private_key.pem - (The AWS private key file .pem file that is used, make sure the correct file path and name is in the group_vars/satellite.yaml, aswell as the inventory file if you need to run the standalone playbooks).
 
 ### ec2-create-instance.yaml
 The play that calls on the AWS API to create the instance with the variables specified in the group_vars/satellite.yaml
+
+### sat6-install.yaml
+The play that creates the filesystems, subscribes to RHSM, installs the prereqs and runs the satellite-installer.
+
+### sat6-configure.yaml
+The play that is meant to be runned after the installer has finished.
+Uploads the manifest, syncs repositories and sets up Content Views, Activation Keys etc.
 
 ### group_vars/satellite.yaml
 The variable file group_vars/satellite contains all the variables that are used for the installation and configuration of the Satellite server. Make sure to read it through and update it to fit your needs. This lets you define exactly what repositories to synchronize and all other configuration that will be set up in the Satellite.
