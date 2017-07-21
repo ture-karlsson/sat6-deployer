@@ -6,13 +6,11 @@ These playbooks requires that the host executing the playbook runs have access t
 In order to connect to the created instance, the privatekey used during the creating also needs to be downloaded and put into the playbook files/ folder. (more described later)
 The Satellite also needs to have a manifest. The playbook expects by defualt that this file is found in files/manifest.zip. The manifest is created and downloaded from the Red Hat Customer Portal.
 
-If the resulting instance needs to use a proxy, this has to be specified in the group_vars/satellite.yaml
-
-This process presumes that your Satellite have access to redhat.com and fedoraproject.org.
+If the resulting instance needs to use a proxy, this also has to be specified in the group_vars/satellite.yaml
 
 ## Usage
 
-# Executing the playbooks
+### Executing the playbooks
 
 The main design to run the provisioning, installation and configuration end to end . 
 By just running the deploy-satellite.yaml the idea is to have a Satellite up and running with content synchronized and Content Views and Activation Keys created. 
@@ -38,10 +36,10 @@ All configuration is fetched from the group_vars/satellite.yaml file.
 Go through the file and read the descriptions and enter the values you want. 
 
 
-
-
 After makinge sure everything is set do:
+```bash
 # ansible-playbook deploy-satellite.yaml
+```
 
 The playbook doesn’t need any inventory file as it’s first running locally for the API calls to AWS, and uses the instance information received to create a temporary inventory file with the add_host module. 
 
@@ -52,15 +50,14 @@ IP will by dynamically entered using the ``` add_host ``` module.
 
 If you however need to repeat a play without running the previous steps, you can use the standalone playbooks.
 The last two playbooks, sat6-install and sat6-configure needs an inventory file since we don’t have access to the “just_created” host that we have running the end-to-end playbook. 
-They both use “hosts: satellite” and therefor we need to populate the inventory file with the correct host entries. There is an example in the hosts file that you can copy and replace the IP with the IP of the instance you want to run on and make sure that the private key is right. 
+They both use “hosts: satellite” and therefore we need to populate the inventory file with the correct host entries. There is an example in the hosts file that you can copy and replace the IP with the IP of the instance you want to run on and make sure that the private key is right. 
 
 Executing standalones:
 
-
 To run the steps individually use the standalone playbooks:
-Ec2-create-instance-standalone.yaml
-Sat6-install-standalone.yaml
-Sat6-configure-standalone.yaml
+ec2-create-instance-standalone.yaml
+sat6-install-standalone.yaml
+sat6-configure-standalone.yaml
 
 Example:
 ```bash
@@ -70,6 +67,7 @@ Example:
 ## Structure 
 ### deploy-satellite.yaml
 Main playbook which calls all the other plays. 
+
 This is to be executed like:
 ```bash
 # ansible-playbook deploy-satellite.yaml
@@ -87,11 +85,16 @@ The variable file group_vars/satellite contains all the variables that are used 
 
 group_vars/satellite have a list of so called profiles. One profile is a group of repositories and certain subscriptions that a certain type of hosts use. A Content View will then be created for this profile as well as Activation Keys and Host Groups for ALL different Lifecycle Environments. There are 3 example profiles in group_vars/satellite. One for basic RHEL 7 servers (named Base) one for Ansible Tower servers (named Tower) and one for Openshift servers. By defining the Openshift profile for example, the sat6-configure.yaml playbook will create all content in Satellite you need to register Openshift servers in each Lifecycle Environment to have access to the specified repositories and consume the specified subscription. It also creates the required Host Groups for you.
 
-!This var file asks for AWS secrets so be careful of what you check in.!
+**This var file asks for AWS secrets so be careful of what you check in**
 
 
 ### Outcome
 If sat6-configure.yaml runs successfully, the playbook have done the following for you:
+* created a EC2 instance 
+* configured proxy on the instance
+* subscribed to RHSM and consuming sub with specified pool
+* installed Satellite prereqs
+* installed Satellite
 * uploaded your manifest
 * created all needed products and repositories
 * synced all repositories
