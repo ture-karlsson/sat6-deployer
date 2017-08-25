@@ -1,0 +1,25 @@
+---
+
+- hosts: capsules
+#  connection: local
+
+  tasks:
+
+  - name: assign capsule to organization {{ organization }}
+    command: hammer capsule update --name {{ ansible_fqdn }} --organizations {{ organization }}
+    connection: local
+
+  - name: assign capsule to location {{ location }}
+    command: hammer capsule update --name {{ ansible_fqdn }} --locations {{ location }}
+    connection: local
+
+  - name: assign lifecycle environments to capsule
+    command: hammer capsule content add-lifecycle-environment --name {{ ansible_fqdn }} --environment {{ item }}
+    with_items: "{{ lifecycle_environments }}"
+    connection: local
+    ignore_errors: yes
+
+  - name: start initial asynchronous sync (this will continue after playbook is done)
+    command: hammer capsule content synchronize --name {{ ansible_fqdn }} --async
+    connection: local
+

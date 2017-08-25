@@ -91,3 +91,6 @@ Have a look around in the GUI and see if all objects were created according to y
 
 ## Issues?
 Please report issues and/or questions.
+
+## TODO
+* Update README to include instructions for Capsule installation and configuration

@@ -1,0 +1,83 @@
+---
+
+- hosts: capsules
+  tasks:
+
+  - name: disable all repositories
+    command: subscription-manager repos --disable '*'
+
+  - name: enable capsule repositories
+    command: subscription-manager repos --enable rhel-7-server-rpms --enable rhel-7-server-satellite-capsule-6.2-rpms --enable rhel-server-rhscl-7-rpms 
+
+  - name: make sure firewalld is enabled and running
+    service:
+      name: firewalld
+      state: started
+      enabled: true
+
+  - name: open firewalld ports
+    firewalld:
+      immediate: yes
+      permanent: yes
+      state: enabled
+      port: "{{ item }}"
+    with_items: "{{ open_ports }}" 
+
+  - name: make sure selinux is in enforcing mode
+    selinux:
+      policy: targeted
+      state: enforcing
+
+# these tasks verify that DNS is configured properly
+# if any of these tasks fail, the installation won't complete successully
+
+  - name: verify localhost resolution
+    command: "ping -c1 localhost"
+    changed_when: false
+
+  - name: verify hostname resolution 
+    command: "ping -c1 {{ ansible_hostname }}"
+    changed_when: false
+
+  - name: verify FQDN resolution
+    command: "ping -c1 {{ ansible_fqdn }}"
+    changed_when: false
+
+  - name: perform yum update
+    yum:
+      name: "*"
+      state: latest
+      update_cache: yes
+ 
+  - name: install capsule packages
+    yum:
+      name: satellite-capsule
+      state: latest 
+
+  - name: generate capsule certificates (run locally on satellite server)
+    command: capsule-certs-generate --capsule-fqdn "{{ ansible_fqdn }}" --certs-tar "{{ playbook_dir }}/files/{{ ansible_fqdn }}.tar --no-colors"
+    register: certs_output
+    connection: local
+
+  - name: copy certs file to capsule
+    copy:
+      dest: "/tmp/"
+      src: "{{ playbook_dir }}/files/{{ ansible_fqdn }}.tar"
+
+  - name: print installer instructions to file
+    copy:
+      dest: "{{ playbook_dir }}/files/{{ ansible_fqdn }}.command"
+      content: "{{ certs_output.stdout }}\n"
+    connection: local
+
+  - name: add correct cert path to command file
+    replace:
+      dest: "{{ playbook_dir }}/files/{{ ansible_fqdn }}.command"
+      regexp: "{{ playbook_dir }}/files/{{ ansible_fqdn }}.tar"
+      replace: "/tmp/{{ ansible_fqdn }}.tar" 
+    connection: local
+
+  - name: notify user
+    debug:
+      msg: run the satellite-installer command found in {{ playbook_dir }}/files/{{ ansible_fqdn }}.command on the Capsule server to finish the installation. after that, the capsule can be configured with capsule-configure.yaml
+
