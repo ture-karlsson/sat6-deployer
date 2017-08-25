@@ -27,7 +27,7 @@
     command: >
       hammer repository-set enable 
       --product '{{ item.product }}' 
-      --name '{{ item.product }}'
+      --name '{{ item.name }}'
       --basearch '{{ item.basearch }}'
       {% if item.releasever is defined %} --releasever '{{ item.releasever }}'{% endif %}
     with_items: "{{ rhel_repositories }}"
