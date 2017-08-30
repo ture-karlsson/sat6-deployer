@@ -8,50 +8,61 @@
     template:
       src: templates/cli_config.yml.j2
       dest: /etc/hammer/cli_config.yml
+    tags: setup
 
   - name: get organization id
     shell: "hammer --csv organization list | tail -n +2 | awk -F ',' '{print $1}'"
     register: organization_id
     changed_when: false
+    tags: setup
 
   - name: add hammer organization default
     command: "hammer defaults add --param-name organization_id --param-value {{ organization_id.stdout }}"
+    tags: setup
 
   - name: upload manifest
     command: hammer subscription upload --file {{ manifest }} 
+    tags: setup
 
   - name: refresh manifest
     command: hammer subscription refresh-manifest
-
-  - name: enable rhel repositories
-    command: >
-      hammer repository-set enable 
-      --product '{{ item.product }}' 
-      --name '{{ item.name }}'
-      --basearch '{{ item.basearch }}'
-      {% if item.releasever is defined %} --releasever '{{ item.releasever }}'{% endif %}
-    with_items: "{{ rhel_repositories }}"
-    ignore_errors: true
+    tags: setup
 
   - name: get current lifecycle environments
     shell: hammer --csv lifecycle-environment list | tail -n +2 | awk -F ',' '{print $2}'
     register: current_lifecycle_environments
     changed_when: false
+    tags: lifecycle_environments
 
   - name: create lifecycle environments
     command: hammer lifecycle-environment create --name {{ item.name }} --prior {{ item.previous }}
     when: item.name not in current_lifecycle_environments.stdout
     with_items: "{{ lifecycle_environments }}"
+    tags: lifecycle_environments
+
+  - name: enable rhel repositories
+    command: >
+      hammer repository-set enable
+      --product '{{ item.product }}'
+      --name '{{ item.name }}'
+      --basearch '{{ item.basearch }}'
+      {% if item.releasever is defined %} --releasever '{{ item.releasever }}'{% endif %}
+    with_items: "{{ rhel_repositories }}"
+    ignore_errors: true
+    tags: repositories
+
 
   - name: get current products
     shell: hammer --csv product list --custom true | tail -n +2 | awk -F ',' '{print $2}'
     register: current_products
     changed_when: false
+    tags: repositories
 
   - name: create custom products
     command: hammer product create --name '{{ item.name }}'
     when: item.name not in current_products.stdout
     with_items: "{{ custom_products }}"
+    tags: repositories
 
   - name: download GPG keys
     get_url:
@@ -60,11 +71,13 @@
     with_subelements:
     - "{{ custom_products }}"
     - repositories
+    tags: repositories
 
   - name: get current GPG keys
     shell: hammer --csv gpg list | tail -n +2 | awk -F ',' '{print $2}'
     register: current_gpg_keys
     changed_when: false
+    tags: repositories
 
   - name: create GPG keys
     shell: hammer gpg create --name {{ item.1.gpg_key.split('/')[-1] }} --key files/{{ item.1.gpg_key.split('/')[-1] }}
@@ -72,11 +85,13 @@
     with_subelements:
     - "{{ custom_products }}"
     - repositories 
+    tags: repositories
 
   - name: get current repositories
     shell: hammer --csv repository list | tail -n +2 | awk -F ',' '{print $2}'
     register: current_repositories
     changed_when: false
+    tags: repositories
 
   - name: create custom repositories
     command: >
@@ -90,16 +105,19 @@
     with_subelements:
     - "{{ custom_products }}"
     - repositories 
+    tags: repositories
 
   - name: get current repository IDs
     shell: hammer --csv repository list | tail -n +2 | awk -F ',' '{print $1}'
     register: current_repository_ids
     changed_when: false
+    tags: repositories
 
   - name: update download policy on all repositories
     command: hammer repository update --download-policy {{ download_policy }} --id {{ item }}
     with_items: "{{ current_repository_ids.stdout_lines }}"
     changed_when: false
+    tags: repositories
 
     # this task makes sure there are no sync tasks running before starting new sync tasks
   - name: wait for sync tasks to complete
@@ -110,10 +128,12 @@
     delay: 60
     retries: 600
     changed_when: false
+    tags: repositories
 
   - name: sync all repositories
     command: hammer repository synchronize --async --id {{ item }}
     with_items: "{{ current_repository_ids.stdout_lines }}"
+    tags: repositories
 
     # this tasks makes sure that sync tasks are complete before continuing
   - name: wait for sync tasks to complete
@@ -124,17 +144,20 @@
     delay: 60
     retries: 600
     changed_when: false
+    tags: repositories
 
   - name: get current content views
     shell: hammer --csv content-view list --nondefault true | tail -n +2 | awk -F ',' '{print $2}'
     register: current_content_views
     changed_when: false
+    tags: content_views
 
   - name: create content views
     command: hammer content-view create --name CV-RHEL{{ item.rhel_major }}-{{ item.name }}
     when: item.name not in current_content_views.stdout
     with_items: "{{ profiles }}"
     register: create_content_views
+    tags: content_views
 
   - name: associate repositories to content views 
     command: > 
@@ -146,11 +169,13 @@
     - "{{ profiles }}"
     - repos
     when: create_content_views.changed
+    tags: content_views
 
   - name: get current content views
     shell: hammer --csv content-view list --nondefault true | tail -n +2 | awk -F ',' '{print $2}'
     register: current_content_views
     changed_when: false
+    tags: content_views
 
   - name: wait for publish tasks to complete
     action:
@@ -160,10 +185,12 @@
     delay: 60
     retries: 60
     changed_when: false
+    tags: content_views
 
   - name: publish all content views
     command: hammer content-view publish --async --name {{ item }}
     with_items: "{{ current_content_views.stdout_lines }}"
+    tags: content_views
 
   - name: wait for publish tasks to complete
     action:
@@ -173,11 +200,13 @@
     delay: 60
     retries: 60
     changed_when: false
+    tags: content_views
 
   - name: get current lifecycle environments
     shell: hammer --csv lifecycle-environment list --library false | tail -n +2 | awk -F ',' '{print $2}'
     register: current_lifecycle_environments
     changed_when: false
+    tags: content_views
  
   # TODO: this task could be made with --async to increase speed but currently it would break because of the read lock that is put on each CV
   - name: promote latest version of each content view to all lifecycle environments
@@ -190,11 +219,13 @@
     with_nested:
     - "{{ current_lifecycle_environments.stdout_lines }}"
     - "{{ current_content_views.stdout_lines }}"
+    tags: content_views
 
   - name: get current activation keys
     shell: hammer --csv activation-key list | tail -n +2 | awk -F ',' '{print $2}'
     register: current_activation_keys
     changed_when: false
+    tags: activation_keys
 
   - name: create activation keys
     command: > 
@@ -207,6 +238,7 @@
     - "{{ lifecycle_environments }}"
     - "{{ profiles }}"
     register: create_activation_keys
+    tags: activation_keys
 
   - name: set release version on activation keys
     command: >
@@ -217,6 +249,7 @@
     with_nested:
     - "{{ lifecycle_environments }}"
     - "{{ profiles }}"
+    tags: activation_keys
 
   # TODO: This is not idempotent, since it will try to attach another subscription every time which is not working (though it works first run and skipped if no activation keys are added)
   - name: attach subscriptions to activation keys
@@ -228,26 +261,31 @@
     with_nested:
     - "{{ lifecycle_environments }}"
     - "{{ profiles }}"
+    tags: activation_keys
 
   - name: get current host collections
     shell: hammer --csv host-collection list | tail -n +2 | awk -F ',' '{print $2}'
     register: current_host_collections
     changed_when: false
+    tags: host_collections
 
   - name: create host collections for each lifecycle environment
     command: hammer host-collection create --name 'HC-{{ item.name }}'
     when: "'HC-{{ item.name }}' not in current_host_collections.stdout"
     with_items: "{{ lifecycle_environments }}"
+    tags: host_collections
 
   - name: create host collections for each profile
     command: hammer host-collection create --name 'HC-{{ item.name }}'
     when: "'HC-{{ item.name }}' not in current_host_collections.stdout"
     with_items: "{{ profiles }}"
+    tags: host_collections
 
   - name: get current host groups
     shell: hammer --csv hostgroup list | tail -n +2 | awk -F ',' '{print $3}'
     register: current_host_groups
     changed_when: false
+    tags: host_groups
 
   - name: create host groups for lifecycle environments
     command: >
@@ -260,6 +298,7 @@
       --domain-id 1
     when: "'HG-{{ item.name }}' not in current_host_groups.stdout"
     with_items: "{{ lifecycle_environments }}"
+    tags: host_groups
 
   # TODO: This is currently hard coded to only work with RHEL7. A similar task would have to be added for RHEL 5 or 6 if it should be used.
   # The architecture and operatingsystem name are also hard coded to x86_64 and RedHat 7.3 respectively
@@ -273,6 +312,7 @@
       --operatingsystem 'RedHat 7.3'
     when: "'HG-{{ item.name }}/RHEL7' not in current_host_groups.stdout"
     with_items: "{{ lifecycle_environments }}"
+    tags: host_groups
 
   # TODO: Same here, also hard coded to only support RHEL7
   - name: create host groups for each profile
@@ -287,6 +327,7 @@
     with_nested:
     - "{{ lifecycle_environments }}"
     - "{{ profiles }}"
+    tags: host_groups
 
   - name: set activation key for each profile host group
     shell: >
@@ -297,4 +338,5 @@
     with_nested:
     - "{{ lifecycle_environments }}"
     - "{{ profiles }}"
+    tags: host_groups
 
