@@ -1,0 +1,109 @@
+---
+- hosts: "{{ hosts }}"
+  become: true
+
+  tasks:
+ 
+  - name: ensure subscription-manager is installed
+    yum:
+      name: subscription-manager
+      state: latest
+    tags: unregister_sat5
+ 
+  - name: ensure systemid is removed
+    file:
+      path: /etc/sysconfig/rhn/systemid
+      state: absent
+    tags: unregister_sat5
+ 
+  - name: ensure up2date is removed
+    file:
+      path: /etc/sysconfig/rhn/up2date
+      state: absent
+    tags: unregister_sat5
+ 
+  - name: ensure that no RHN or Satellite 5 packages are installed
+    yum:
+      name: "{{ item }}"
+      state: absent
+    with_items:
+    - osa-common.noarch
+    - osad.noarch
+    - rhn-check.noarch
+    - rhn-client-tools.noarch
+    - rhn-setup.noarch
+    - rhncfg.noarch
+    - rhncfg-actions.noarch
+    - rhnlib.noarch
+    - rhncfg-client.noarch
+    - rhnsd.x86_64
+    - spacewalk-usix.noarch
+    - spacewalk-backend-libs.noarch
+    - spacewalk-oscap.noarch
+    - yum-rhn-plugin.noarch
+    - jabberpy.noarch
+    tags: unregister_sat5
+ 
+  - name: install http://{{ capsule }}/pub/katello-ca-consumer-latest.noarch.rpm
+    yum:
+      name: http://{{ capsule }}/pub/katello-ca-consumer-latest.noarch.rpm
+      state: present
+    tags: register_sat6
+ 
+  - name: register with subscription-manager
+    command: "subscription-manager register --org {{ organization }} --activationkey AK-{{ lifecycle_environment }}-RHEL{{ ansible_distribution_major_version }}-{{ profile }}"
+    tags: register_sat6
+ 
+  - name: enable all repositories
+    command: "subscription-manager repos --enable '*'"
+    tags: register_sat6
+ 
+  - name: install katello-agent
+    yum:
+      name: katello-agent
+      state: latest
+    tags: register_sat6
+ 
+  - name: start and enable goferd
+    service:
+      name: goferd
+      state: started
+      enabled: true
+    tags: register_sat6
+ 
+  - name: get host id
+    uri:
+      url: https://{{ satellite }}/api/hosts/{{ ansible_nodename }}
+      method: GET
+      user: "{{ satellite_username }}"
+      password: "{{ satellite_password }}"
+      force_basic_auth: yes
+    connection: local
+    register: host_object
+    tags: add_to_host_group
+ 
+  - name: get host groups (possibly multiple results if the search match more than one host group)
+    uri:
+      url: https://{{ satellite }}/api/hostgroups?search=HG-{{ lifecycle_environment }}/RHEL{{ ansible_distribution_major_version }}/{{ profile }}
+      method: GET
+      user: "{{ satellite_username }}"
+      password: "{{ satellite_password }}"
+      force_basic_auth: yes
+    connection: local
+    register: host_group_object
+    tags: add_to_host_group
+ 
+  - name: put host in correct host group
+    uri:
+      url: https://{{ satellite }}/api/hosts/{{ host_object.json.id }}
+      method: PUT
+      user: "{{ satellite_username }}"
+      password: "{{ satellite_password }}"
+      force_basic_auth: yes
+      body: '{"host":{"hostgroup_id":{{ item.id }}}}'
+      body_format: json
+      HEADER_Content-Type: "application/json"
+    connection: local
+    with_items: "{{ host_group_object.json.results }}"
+    when: item.title == "HG-{{ lifecycle_environment }}/RHEL{{ ansible_distribution_major_version }}/{{ profile }}"
+    tags: add_to_host_group

@@ -3,3 +3,17 @@ sat6
 
 [capsules]
 cap6
+
+[test-hosts]
+test1
+test2
+test3
+
+[test-hosts:vars]
+satellite=sat6
+capsule=cap6
+organization="Tures Org"
+lifecycle_environment=Test
+profile=Base
+satellite_username=migration-admin
+satellite_password=migration-admin
