@@ -55,7 +55,7 @@
       state: latest 
 
   - name: generate capsule certificates (run locally on satellite server)
-    command: capsule-certs-generate --capsule-fqdn "{{ ansible_fqdn }}" --certs-tar "{{ playbook_dir }}/files/{{ ansible_fqdn }}.tar --no-colors"
+    command: capsule-certs-generate --capsule-fqdn "{{ ansible_fqdn }}" --certs-tar "{{ playbook_dir }}/files/{{ ansible_fqdn }}.tar" --no-colors
     register: certs_output
     connection: local
 
