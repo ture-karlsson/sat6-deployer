@@ -1,0 +1,93 @@
+- name: get current host groups
+  shell: hammer --csv hostgroup list | tail -n +2 | awk -F ',' '{print $3}'
+  register: current_host_groups
+  changed_when: false
+  tags: host_groups
+
+- name: create host groups for {{ location }}
+  command: >
+    hammer hostgroup create
+    --organization '{{ organization }}'
+    --name 'HG-{{ location }}'
+    --environment production
+    --content-source-id 1
+    --domain-id 1
+  when: "'HG-{{ location }}' not in current_host_groups.stdout"
+  tags: host_groups
+
+- name: create host groups for lifecycle environments for {{ location }}
+  command: >
+    hammer hostgroup create
+    --organization '{{ organization }}'
+    --name '{{ item.name }}'
+    --lifecycle-environment '{{ item.name }}'
+    --parent 'HG-{{ location }}'
+  when: "'HG-{{ location }}/{{ item.name }}' not in current_host_groups.stdout"
+  with_items: "{{ lifecycle_environments }}"
+  tags: host_groups
+
+# TODO: It is not optimal that operating system parameter is hard coded to RHEL minor version
+- name: create a RHEL 6 host group under each lifecycle environment for {{ location }}
+  shell: >
+    hammer hostgroup create
+    --organization '{{ organization }}'
+    --name 'RHEL6'
+    --parent-id $(hammer --csv hostgroup list --search 'title = HG-{{ location }}/{{ item.name }}' | tail -n +2 | awk -F ',' '{print $1}')
+    --content-view 'CV-RHEL6'
+    --architecture 'x86_64'
+    --operatingsystem 'RedHat 6.10'
+  when: "'HG-{{ location }}/{{ item.name }}/RHEL6' not in current_host_groups.stdout"
+  with_items: "{{ lifecycle_environments }}"
+  tags: host_groups
+
+# TODO: It is not optimal that operating system parameter is hard coded to RHEL minor version
+- name: create a RHEL 7 host group under each lifecycle environment for {{ location }}
+  shell: >
+    hammer hostgroup create
+    --organization '{{ organization }}'
+    --name 'RHEL7'
+    --parent-id $(hammer --csv hostgroup list --search 'title = HG-{{ location }}/{{ item.name }}' | tail -n +2 | awk -F ',' '{print $1}')
+    --content-view 'CV-RHEL7'
+    --architecture 'x86_64'
+    --operatingsystem 'RedHat 7.6'
+  when: "'HG-{{ location }}/{{ item.name }}/RHEL7' not in current_host_groups.stdout"
+  with_items: "{{ lifecycle_environments }}"
+  tags: host_groups
+
+#- name: create host groups for each profile for {{ location }}
+#  shell: >
+#    hammer hostgroup create 
+#    --organization '{{ organization }}'
+#    --name '{{ item.1.shortname }}'
+#    --content-view 'CV-{{ item.1.name }}'
+#    --parent-id $(hammer --csv hostgroup list --search 'title = HG-{{ location }}/{{ item.0.name }}/RHEL{{ item.1.rhel_major}}' | tail -n +2 | awk -F ',' '{print $1}')
+#  when: "'HG-{{ location }}/{{ item.0.name }}/RHEL{{ item.1.rhel_major }}/{{ item.1.shortname }}' not in current_host_groups.stdout and '{{ item.1.shortname }}' != ''" 
+#  register: create_profile_host_groups
+#  with_nested:
+#  - "{{ lifecycle_environments }}"
+#  - "{{ profiles }}"
+#  tags: host_groups
+#
+#- name: set activation key for each RHEL6 profile host group {{ location }}
+#  shell: >
+#    hammer hostgroup set-parameter
+#    --hostgroup-title 'HG-{{ location }}/{{ item.0.name }}/RHEL7/{{ item.1.shortname }}'
+#    --name kt_activation_keys --value 'AK-{{ item.0.name }}-{{ item.1.name }}'
+#  when: create_profile_host_groups.changed
+#  with_nested:
+#  - "{{ lifecycle_environments }}"
+#  - "{{ profiles }}"
+#  tags: host_groups
+#
+#- name: set activation key for each profile host group {{ location }}
+#  shell: >
+#    hammer hostgroup set-parameter
+#    --hostgroup-title 'HG-{{ location }}/{{ item.0.name }}/RHEL7/{{ item.1.shortname }}'
+#    --name kt_activation_keys --value 'AK-{{ item.0.name }}-{{ item.1.name }}'
+#  when: create_profile_host_groups.changed
+#  with_nested:
+#  - "{{ lifecycle_environments }}"
+#  - "{{ profiles }}"
+#  tags: host_groups
+
+
