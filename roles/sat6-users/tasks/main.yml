@@ -1,0 +1,17 @@
+---
+
+- name: ensure users exist
+  command: >
+    hammer user create 
+    --organizations '{{ organization }}'
+    --locations '{{ locations|join(',') }}'
+    --auth-source '{{ item.auth_source }}'
+    --login '{{ item.username }}'
+    --password '{{ item.password }}'
+    --mail '{{ item.mail }}'
+    --roles '{{ item.roles|join(',') }}'
+  with_items: '{{ users }}'
+  register: user_create_output
+  failed_when: user_create_output.rc != 0 and user_create_output.rc != 65
+  changed_when: user_create_output.rc == 0
+  no_log: true

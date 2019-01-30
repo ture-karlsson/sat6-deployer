@@ -1,0 +1,12 @@
+---
+
+- name: copy manifest to remote host
+  copy:
+     src: '{{ manifest }}'
+     dest: '/tmp/manifest.zip'
+
+- name: upload manifest
+  command: hammer subscription upload --organization '{{ organization }}' --file '/tmp/manifest.zip'
+
+#- name: refresh manifest
+#  command: hammer subscription refresh-manifest --organization '{{ organization }}' 

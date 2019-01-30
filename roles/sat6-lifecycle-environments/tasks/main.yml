@@ -1,0 +1,12 @@
+---
+
+- name: get current lifecycle environments
+  shell: hammer --csv lifecycle-environment list --organization '{{ organization }}' | tail -n +2 | awk -F ',' '{print $2}'
+  register: current_lifecycle_environments
+  changed_when: false
+
+- name: create lifecycle environments
+  command: hammer lifecycle-environment create --organization '{{ organization }}' --name '{{ item.name }}' --prior '{{ item.previous }}'
+  when: item.name not in current_lifecycle_environments.stdout
+  with_items: "{{ lifecycle_environments }}"
+

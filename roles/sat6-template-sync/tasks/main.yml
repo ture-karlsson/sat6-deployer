@@ -1,0 +1,8 @@
+---
+
+- name: import templates from git
+  command: >
+    hammer import-templates
+    --organization '{{ organization }}' 
+    --prefix '{{ template_sync_prefix }}' 
+    --repo '{{ template_sync_repo }}'

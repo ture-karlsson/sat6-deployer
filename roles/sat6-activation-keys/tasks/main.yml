@@ -1,0 +1,39 @@
+---
+
+- name: get current activation keys
+  shell: hammer --csv activation-key list --organization '{{ organization }}' | tail -n +2 | awk -F ',' '{print $2}'
+  register: current_activation_keys
+  changed_when: false
+
+- name: create activation keys
+  command: >
+    hammer activation-key create
+    --organization '{{ organization }}'
+    --name '{{ item.name }}'
+    --lifecycle-environment '{{ item.lifecycle_environment }}'
+    --content-view '{{ item.content_view }}'
+  when: 'item.name not in current_activation_keys.stdout'
+  with_items:
+  - "{{ activation_keys }}"
+
+- name: set release version on activation keys
+  command: >
+    hammer activation-key update
+    --organization '{{ organization }}'
+    --name '{{ item.name }}'
+    --release-version '{{ item.release_version }}'
+  with_items: "{{ activation_keys }}"
+
+- name: attach subscriptions to activation keys
+  shell: >
+    hammer activation-key add-subscription
+    --organization '{{ organization }}'
+    --name '{{ item.0.name }}'
+    --subscription-id $(hammer --csv subscription list --organization '{{ organization }}' --search '{{ item[1] }}' | tail -n +2 | awk -F ',' '{print $1}')
+  register: attach_output
+  changed_when: 'attach_output.rc == 0'
+  failed_when: 'attach_output.rc != 0 and attach_output.rc != 128'
+  with_subelements:
+  - "{{ activation_keys }}"
+  - subscriptions 
+

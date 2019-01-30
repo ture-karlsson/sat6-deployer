@@ -1,0 +1,11 @@
+---
+
+- name: override smart class parameters
+  command: >
+    hammer sc-param update 
+    --puppet-class '{{ item.0.class_name }}' 
+    --name '{{ item.1 }}'
+    --override true
+  with_subelements:
+  - "{{ smart_class_parameters_override }}"
+  - parameter_names

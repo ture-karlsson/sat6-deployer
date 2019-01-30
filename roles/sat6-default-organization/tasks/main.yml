@@ -1,0 +1,10 @@
+---
+
+- name: get organization id
+  shell: "hammer --csv organization list | grep '{{ organization }}' | awk -F ',' '{print $1}'"
+  register: organization_id
+  changed_when: false
+
+- name: add hammer organization default
+  command: "hammer defaults add --param-name organization_id --param-value {{ organization_id.stdout }}"
+
