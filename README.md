@@ -80,7 +80,7 @@ or everything at once:
 Have a look around in the GUI and see if all objects were created according to your expectations.
 
 ## Issues?
-Please report issues and/or questions. Pull request are very welcome.
+Please report issues and/or questions. Pull requests are very welcome.
 
 ## Future improvements
 This is very dependant on the command module executing hammer with is far from optimal. My plan is to start using https://github.com/theforeman/foreman-ansible-modules instead. Again, PRs are welcome. 
