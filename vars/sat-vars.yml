@@ -25,7 +25,7 @@ locations:
 # specify where the manifest file is located
 manifest: "files/manifest.zip"
 
-# specify a list of domains that will be create
+# specify a list of domains that will be created
 domains:
 - "example.com"
 
@@ -44,7 +44,10 @@ settings:
 #template_sync_repo: https://gitlab.example.com/sat6-templates.git
 
 # specify a list of custom user roles that should be created with
-# their corresponding permissions
+# their corresponding permissions.
+# the permissions have to be divided into different resources,
+# e.g. content views, lifecycle environments and products as in
+# the Manage Content Views role below.
 user_roles:
 
 - name: Import Templates
@@ -221,8 +224,7 @@ activation_keys:
   content_view: CV-RHEL7
   release_version: 7Server
   subscriptions:
-  - Employee SKU
-  #- Red Hat Enterprise Linux
+  - Red Hat Enterprise Linux
   - Extra Packages For Enterprise Linux
 
 - name: AK-TEST-RHEL7
@@ -230,8 +232,7 @@ activation_keys:
   content_view: CV-RHEL7
   release_version: 7Server
   subscriptions:
-  - Employee SKU
-  #- Red Hat Enterprise Linux
+  - Red Hat Enterprise Linux
   - Extra Packages For Enterprise Linux
 
 - name: AK-PROD-RHEL7
@@ -239,8 +240,7 @@ activation_keys:
   content_view: CV-RHEL7
   release_version: 7Server
   subscriptions:
-  - Employee SKU
-  #- Red Hat Enterprise Linux
+  - Red Hat Enterprise Linux
   - Extra Packages For Enterprise Linux
 
 # specify a list of host groups that should be created
