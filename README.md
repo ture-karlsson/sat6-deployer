@@ -16,15 +16,15 @@ Find an available Satellite subscription you want to use and attach it with its 
 ```bash
 # subscription-manager list --available
 # subscription-manager attach --pool <pool ID of your Satellite subscription>
+# subscription-manager repos \
+--disable="*"
+--enable=rhel-7-server-rpms \
+--enable=rhel-server-rhscl-7-rpms \
+--enable=rhel-7-server-satellite-6.4-rpms \
+--enable=rhel-7-server-satellite-maintenance-6-rpms \
+--enable=rhel-7-server-ansible-2.6-rpms
 ```
-Reference: https://access.redhat.com/documentation/en-us/red_hat_satellite/6.2/html/installation_guide/installing_satellite_server
-
-### Install Ansible
-```bash
-# rpm -i https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
-# yum -y install ansible
-# yum -y remove epel-release
-```
+https://access.redhat.com/documentation/en-us/red_hat_satellite/6.4/html/installing_satellite_server_from_a_connected_network/installing_satellite_server#registering_subscription_management_satellite
 
 ### Clone this repository
 ```bash
