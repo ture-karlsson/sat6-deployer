@@ -7,7 +7,7 @@
 
 - name: wait for publish tasks to complete
   action:
-    shell hammer --csv task list --organization '{{ organization }}' --search 'label = Actions::Katello::ContentView::Publish and state = running'
+    command hammer --csv task list --organization '{{ organization }}' --search 'label = Actions::Katello::ContentView::Publish and state = running'
   register: running_sync_tasks
   until: running_sync_tasks.stdout.find("running") == -1
   delay: 60
@@ -16,11 +16,12 @@
 
 - name: publish all content views
   command: hammer content-view publish --organization '{{ organization }}' --name '{{ item }}'
+  when: running_sync_tasks is changed
   with_items: "{{ current_content_views.stdout_lines }}"
 
 - name: wait for publish tasks to complete
   action:
-    shell hammer --csv task list --organization '{{ organization }}' --search 'label = Actions::Katello::ContentView::Publish and state = running'
+    command hammer --csv task list --organization '{{ organization }}' --search 'label = Actions::Katello::ContentView::Publish and state = running'
   register: running_sync_tasks
   until: running_sync_tasks.stdout.find("running") == -1
   delay: 60
@@ -40,6 +41,7 @@
     --to-lifecycle-environment '{{ item[0] }}'
     --content-view '{{ item[1] }}'
     --force
+  when: current_lifecycle_environments is changed
   with_nested:
-  - "{{ current_lifecycle_environments.stdout_lines }}"
-  - "{{ current_content_views.stdout_lines }}"
+    - "{{ current_lifecycle_environments.stdout_lines }}"
+    - "{{ current_content_views.stdout_lines }}"

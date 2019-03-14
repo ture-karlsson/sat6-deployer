@@ -1,78 +1,97 @@
 ---
+- name: Configure Red Hat Product Repositories
+  when: redhat_products is defined
+  block:
+    - name: ensure Red Hat repositories are enabled
+      command: >
+        hammer repository-set enable
+        --organization '{{ organization }}'
+        --product '{{ item.0.name }}'
+        --name '{{ item.1.name }}'
+        --basearch '{{ item.1.basearch }}'
+        {% if item.1.releasever is defined %} --releasever '{{ item.1.releasever }}'{% endif %}
+      register: repository_output
+      failed_when: '"Error: 409 Conflict" not in repository_output.stderr and repository_output.rc != 0'
+      changed_when: repository_output.rc == 0
+      with_subelements:
+        - "{{ redhat_products }}"
+        - repositories
 
-- name: ensure Red Hat repositories are enabled
-  command: >
-    hammer repository-set enable
-    --organization '{{ organization }}'
-    --product '{{ item.0.name }}'
-    --name '{{ item.1.name }}'
-    --basearch '{{ item.1.basearch }}'
-    {% if item.1.releasever is defined %} --releasever '{{ item.1.releasever }}'{% endif %}
-  register: repository_output
-  failed_when: '"Error: 409 Conflict" not in repository_output.stderr and repository_output.rc != 0' 
-  changed_when: repository_output.rc == 0 
-  with_subelements: 
-  - "{{ redhat_products }}"
-  - repositories
+- name: Configure Custom products
+  when: custom_products is defined
+  block:
+    - name: get current products
+      shell: hammer --csv product list --organization '{{ organization }}' --custom true | tail -n +2 | awk -F ',' '{print $2}'
+      register: current_products
+      changed_when: false
 
-- name: get current products
-  shell: hammer --csv product list --organization '{{ organization }}' --custom true | tail -n +2 | awk -F ',' '{print $2}'
-  register: current_products
-  changed_when: false
+    - name: create custom products
+      command: hammer product create --organization '{{ organization }}' --name '{{ item.name }}'
+      when: 
+        - item.name not in current_products.stdout)
+      with_items: "{{ custom_products }}"
 
-- name: create custom products
-  command: hammer product create --organization '{{ organization }}' --name '{{ item.name }}'
-  when: item.name not in current_products.stdout
-  with_items: "{{ custom_products }}"
+    - name: create temp GPG keys catalogue
+      file:
+        path: '/tmp/gpg-keys'
+        state: directory
 
-- name: create temp GPG keys catalogue
-  file:
-    path: '/tmp/gpg-keys'
-    state: directory
+    # - name: download GPG keys
+    #   get_url:
+    #     url: "{{ item.1.gpg_key }}"
+    #     dest: "/tmp/gpg-keys/{{ item.1.gpg_key.split('/')[-1] }}"
+    #   environment:
+    #     http_proxy: http://10.200.0.10:3128
+    #     https_proxy: http://10.200.0.10:3128
+    #   with_subelements:
+    #     - "{{ custom_products }}"
+    #     - repositories
 
-- name: download GPG keys
-  get_url:
-    url: "{{ item.1.gpg_key }}"
-    dest: "/tmp/gpg-keys/{{ item.1.gpg_key.split('/')[-1] }}"
-  with_subelements:
-  - "{{ custom_products }}"
-  - repositories
+    - name: download GPG keys
+      get_url:
+        url: "{{ item.1.gpg_key }}"
+        dest: "/tmp/gpg-keys/{{ item.1.gpg_key.split('/')[-1] }}"
+      with_subelements:
+        - "{{ custom_products }}"
+        - repositories
 
-#- name: download GPG keys
-#  shell: curl --proxy {{ http_proxy }} {{ item.1.gpg_key }} > files/{{ item.1.gpg_key.split('/')[-1] }}
-#  with_subelements:
-#  - "{{ custom_products }}"
-#  - repositories
+    # - name: download GPG keys
+    #   shell: curl --proxy {{ http_proxy }} {{ item.1.gpg_key }} > files/{{ item.1.gpg_key.split('/')[-1] }}
+    #   with_subelements:
+    #     - "{{ custom_products }}"
+    #     - repositories
 
-- name: get current GPG keys
-  shell: hammer --csv gpg list --organization '{{ organization }}' | tail -n +2 | awk -F ',' '{print $2}'
-  register: current_gpg_keys
-  changed_when: false
+    - name: get current GPG keys
+      shell: hammer --csv gpg list --organization '{{ organization }}' | tail -n +2 | awk -F ',' '{print $2}'
+      register: current_gpg_keys
+      changed_when: false
 
-- name: create GPG keys
-  shell: hammer gpg create --organization '{{ organization }}' --name '{{ item.path }}' --key '/tmp/gpg-keys/{{ item.path }}'
-  when: item.path not in current_gpg_keys.stdout
-  with_filetree: /tmp/gpg-keys/
+    - name: create GPG keys
+      command: hammer gpg create --organization '{{ organization }}' --name '{{ item.path }}' --key "/tmp/gpg-keys/'{{ item.path }}'"
+      when: item.path not in current_gpg_keys.stdout
+      with_filetree: /tmp/gpg-keys/
 
-- name: get current repositories
-  shell: hammer --csv repository list --organization '{{ organization }}' | tail -n +2 | awk -F ',' '{print $2}'
-  register: current_repositories
-  changed_when: false
+    - name: get current repositories
+      shell: hammer --csv repository list --organization '{{ organization }}' | tail -n +2 | awk -F ',' '{print $2}'
+      register: current_repositories
+      changed_when: false
 
-- name: create custom repositories
-  command: >
-    hammer repository create
-    --organization '{{ organization }}'
-    --content-type {{ item.1.content_type }}
-    --url {{ item.1.url }}
-    --product '{{ item.0.name }}'
-    --name '{{ item.1.name }}'
-    {% if item.1.gpg_key is defined %} --gpg-key "{{ item.1.gpg_key.split('/')[-1] }}"{% endif %}
-    {% if item.1.ignore_global_proxy is defined %} --ignore-global-proxy '{{ item.1.ignore_global_proxy }}'{% endif %}
-  when: item.1.name not in current_repositories.stdout
-  with_subelements:
-  - "{{ custom_products }}"
-  - repositories
+    - name: create custom repositories
+      command: >
+        hammer repository create
+        --organization '{{ organization }}'
+        --content-type {{ item.1.content_type }}
+        --url {{ item.1.url }}
+        --product '{{ item.0.name }}'
+        --name '{{ item.1.name }}'
+        {% if item.1.gpg_key is defined %} --gpg-key "{{ item.1.gpg_key.split('/')[-1] }}"{% endif %}
+        {% if item.1.ignore_global_proxy is defined %} --ignore-global-proxy '{{ item.1.ignore_global_proxy }}'{% endif %}
+      when:
+        - item.1.name not in current_repositories.stdout
+        - custom_products is defined
+      with_subelements:
+        - "{{ custom_products }}"
+        - repositories
 
 - name: get current yum repository IDs except kickstart repos
   shell: hammer --csv repository list --organization '{{ organization }}' --search 'name !~ kickstart' --content-type yum | tail -n +2 | awk -F ',' '{print $1}'
@@ -83,3 +102,6 @@
   command: hammer repository update --organization '{{ organization }}' --download-policy {{ download_policy }} --id {{ item }}
   with_items: "{{ current_yum_repository_ids.stdout_lines }}"
 
+- name: Disconnected satellite - ensure mirror-on-sync is turned off on all yum repositories
+  command: hammer repository update --organization '{{ organization }}' --id {{ item }} --mirror-on-sync false
+  with_items: "{{ current_yum_repository_ids.stdout_lines }}"

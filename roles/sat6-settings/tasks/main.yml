@@ -1,5 +1,7 @@
 ---
-
-- name: update settings
-  command: hammer settings set --name "{{ item.name }}"  --value "{{ item.value }}"
-  with_items: "{{ settings }}"
+- name: Update settings
+  when: settings is defined
+  block:
+    - name: update settings
+      command: hammer settings set --name "{{ item.name }}"  --value "{{ item.value }}"
+      with_items: "{{ settings }}"

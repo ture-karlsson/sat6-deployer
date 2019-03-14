@@ -12,5 +12,5 @@
 
 - name: ensure all locations are assigned to organization
   command: hammer location add-organization --organization "{{ organization }}" --name "{{ item }}"
+  when: current_locations is changed
   with_items: "{{ locations }}"
-

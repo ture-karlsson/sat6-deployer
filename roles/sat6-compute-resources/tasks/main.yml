@@ -2,11 +2,11 @@
 
 - name: ensure compute resources are present
   command: >
-    hammer compute-resource create 
+    hammer compute-resource create
     --name '{{ item.name }}'
-    --provider '{{ item.provider }}' 
-    --url '{{ item.url }}' 
-    --datacenter '{{ item.datacenter }}' 
-    --user '{{ item.username }}' 
+    --provider '{{ item.provider }}'
+    --url '{{ item.url }}'
+    --datacenter '{{ item.datacenter }}'
+    --user '{{ item.username }}'
     --password '{{ item.password }}'
   with_items: "{{ compute_resources }}"

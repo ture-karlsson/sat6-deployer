@@ -1,50 +1,52 @@
 ---
+- name: Configure Host Groups
+  when: host_groups is defined
+  block:
+    - name: get current host groups
+      shell: hammer --csv hostgroup list | tail -n +2 | awk -F ',' '{print $3}'
+      register: current_host_groups
+      changed_when: false
 
-- name: get current host groups
-  shell: hammer --csv hostgroup list | tail -n +2 | awk -F ',' '{print $3}'
-  register: current_host_groups
-  changed_when: false
+    - name: create host groups
+      command: >
+        hammer hostgroup
+        {% if item.title not in current_host_groups.stdout %}
+        create
+        --name '{{ item.name }}'
+        {% else %}
+        update
+        --title '{{ item.title }}'
+        {% endif %}
+        --organizations '{{ organization }}'
+        --query-organization '{{ organization }}'
+        --locations '{{ locations|join(',') }}'
+        {% if item.parent is defined %}                --parent '{{ item.parent }}'{% endif %}
+        {% if item.description is defined %}           --description '{{ item.description }}'{% endif %}
+        {% if item.lifecycle_environment is defined %} --lifecycle-environment '{{ item.lifecycle_environment }}'{% endif %}
+        {% if item.content_view is defined %}          --content-view '{{ item.content_view }}'{% endif %}
+        {% if item.content_source is defined %}        --content-source '{{ item.content_source }}'{% endif %}
+        {% if item.puppet_environment is defined %}    --environment '{{ item.puppet_environment }}'{% endif %}
+        {% if item.compute_resource is defined %}      --compute-resource '{{ item.compute_resource }}'{% endif %}
+        {% if item.compute_profile_id is defined %}    --compute-profile-id '{{ item.compute_profile_id }}'{% endif %}
+        {% if item.puppet_master is defined %}         --puppet-proxy '{{ item.puppet_master }}'{% endif %}
+        {% if item.puppet_ca is defined %}             --puppet-ca-proxy '{{ item.puppet_ca }}'{% endif %}
+        {% if item.puppet_classes is defined %}        --puppet-classes '{{ item.puppet_classes|join(',') }}'{% endif %}
+        {% if item.domain is defined %}                --domain '{{ item.domain }}'{% endif %}
+        {% if item.subnet is defined %}                --subnet '{{ item.subnet }}'{% endif %}
+        {% if item.architecture is defined %}          --architecture '{{ item.architecture }}'{% endif %}
+        {% if item.os is defined %}                    --operatingsystem '{{ item.os }}'{% endif %}
+        {% if item.partition_table is defined %}       --partition-table '{{ item.partition_table }}'{% endif %}
+        {% if item.pxe_loader is defined %}            --pxe-loader '{{ item.pxe_loader }}'{% endif %}
+        {% if item.root_pass is defined %}             --root-pass '{{ item.root_pass }}'{% endif %}
+    #  when: "item.title not in current_host_groups.stdout"
+      with_items: "{{ host_groups }}"
 
-- name: create host groups 
-  command: >
-    hammer hostgroup
-    {% if item.title not in current_host_groups.stdout %}
-    create 
-    --name '{{ item.name }}'
-    {% else %} 
-    update 
-    --title '{{ item.title }}'
-    {% endif %}
-    --organizations '{{ organization }}'
-    --query-organization '{{ organization }}'
-    --locations '{{ locations|join(',') }}'
-    {% if item.parent is defined %}                --parent '{{ item.parent }}'{% endif %}
-    {% if item.description is defined %}           --description '{{ item.description }}'{% endif %}
-    {% if item.lifecycle_environment is defined %} --lifecycle-environment '{{ item.lifecycle_environment }}'{% endif %}
-    {% if item.content_view is defined %}          --content-view '{{ item.content_view }}'{% endif %}
-    {% if item.content_source is defined %}        --content-source '{{ item.content_source }}'{% endif %}
-    {% if item.puppet_environment is defined %}    --environment '{{ item.puppet_environment }}'{% endif %}
-    {% if item.compute_resource is defined %}      --compute-resource '{{ item.compute_resource }}'{% endif %}
-    {% if item.compute_profile_id is defined %}    --compute-profile-id '{{ item.compute_profile_id }}'{% endif %}
-    {% if item.puppet_master is defined %}         --puppet-proxy '{{ item.puppet_master }}'{% endif %}
-    {% if item.puppet_ca is defined %}             --puppet-ca-proxy '{{ item.puppet_ca }}'{% endif %}
-    {% if item.puppet_classes is defined %}        --puppet-classes '{{ item.puppet_classes|join(',') }}'{% endif %}
-    {% if item.domain is defined %}                --domain '{{ item.domain }}'{% endif %}
-    {% if item.subnet is defined %}                --subnet '{{ item.subnet }}'{% endif %}
-    {% if item.architecture is defined %}          --architecture '{{ item.architecture }}'{% endif %}
-    {% if item.os is defined %}                    --operatingsystem '{{ item.os }}'{% endif %}
-    {% if item.partition_table is defined %}       --partition-table '{{ item.partition_table }}'{% endif %}
-    {% if item.pxe_loader is defined %}            --pxe-loader '{{ item.pxe_loader }}'{% endif %}
-    {% if item.root_pass is defined %}             --root-pass '{{ item.root_pass }}'{% endif %}
-#  when: "item.title not in current_host_groups.stdout"
-  with_items: "{{ host_groups }}"
-
-- name: set host group parameters 
-  command: >
-    hammer hostgroup set-parameter
-    --hostgroup-title '{{ item.0.title }}'
-    --name '{{ item.1.name }}'
-    --value '{{ item.1.value }}'
-  with_subelements: 
-  - "{{ host_groups }}"
-  - parameters
+    - name: set host group parameters
+      command: >
+        hammer hostgroup set-parameter
+        --hostgroup-title '{{ item.0.title }}'
+        --name '{{ item.1.name }}'
+        --value '{{ item.1.value }}'
+      with_subelements:
+      - "{{ host_groups }}"
+      - parameters

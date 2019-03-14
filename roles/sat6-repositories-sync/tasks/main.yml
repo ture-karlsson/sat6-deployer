@@ -1,8 +1,8 @@
 ---
 
-- name: ensure no sync tasks are already running 
+- name: ensure no sync tasks are already running
   action:
-    shell hammer --csv task list --organization '{{ organization }}' --search 'label = Actions::Katello::Repository::Sync and state = running'
+    command hammer --csv task list --organization '{{ organization }}' --search 'label = Actions::Katello::Repository::Sync and state = running'
   register: running_sync_tasks
   until: running_sync_tasks.stdout.find("running") == -1
   delay: 60
@@ -16,31 +16,37 @@
 
 - name: sync all repositories
   command: hammer repository synchronize --organization '{{ organization }}' --async --id {{ item }}
+  when: current_repository_ids.stdout_lines is defined
   with_items: "{{ current_repository_ids.stdout_lines }}"
 
 - name: wait for sync tasks to complete
   action:
-    shell hammer --csv task list --organization '{{ organization }}' --search 'label = Actions::Katello::Repository::Sync and state = running'
+    command hammer --csv task list --organization '{{ organization }}' --search 'label = Actions::Katello::Repository::Sync and state = running'
   register: running_sync_tasks
   until: running_sync_tasks.stdout.find("running") == -1
   delay: 60
   retries: 600
   changed_when: false
 
-- name: get current sync plans
-  shell: hammer --csv sync-plan list --organization '{{ organization }}' | tail -n +2 | awk -F ',' '{print $2}'
-  register: current_sync_plans
-  changed_when: false
+- name: Configure a Sync Plan
+  when:
+    - sync_plan_name is defined
+    - sync_plan_interval is defined
+  block:
+    - name: get current sync plans
+      shell: hammer --csv sync-plan list --organization '{{ organization }}' | tail -n +2 | awk -F ',' '{print $2}'
+      register: current_sync_plans
+      changed_when: false
 
-- name: ensure sync plan "{{ sync_plan_name }}" exists
-  shell: hammer sync-plan create --organization '{{ organization }}' --enabled yes --name "{{ sync_plan_name }}" --interval "{{ sync_plan_interval }}"  --sync-date "$(date +"%Y-%m-%d" -d "next day") 00:00:00"
-  when: "sync_plan_name not in current_sync_plans.stdout"
+    - name: ensure sync plan "{{ sync_plan_name }}" exists
+      command: hammer sync-plan create --organization '{{ organization }}' --enabled yes --name "{{ sync_plan_name }}" --interval "{{ sync_plan_interval }}"  --sync-date "$(date +"%Y-%m-%d" -d "next day") 00:00:00"
+      when: "sync_plan_name not in current_sync_plans.stdout"
 
-- name: get current products
-  shell: hammer --csv product list --organization '{{ organization }}' --enabled true | tail -n +2 | awk -F ',' '{print $2}'
-  register: current_product_names
-  changed_when: false
+    - name: get current products
+      command: hammer --csv product list --organization '{{ organization }}' --enabled true | tail -n +2 | awk -F ',' '{print $2}'
+      register: current_product_names
+      changed_when: false
 
-- name: ensure all products are in "{{ sync_plan_name }}" sync plan
-  command: hammer product update --organization '{{ organization }}' --name "{{ item }}" --sync-plan "{{ sync_plan_name }}" 
-  with_items: "{{ current_product_names.stdout_lines }}"
+    - name: ensure all products are in "{{ sync_plan_name }}" sync plan
+      command: hammer product update --organization '{{ organization }}' --name "{{ item }}" --sync-plan "{{ sync_plan_name }}"
+      with_items: "{{ current_product_names.stdout_lines }}"

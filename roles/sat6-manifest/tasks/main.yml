@@ -1,12 +1,24 @@
 ---
-
 - name: copy manifest to remote host
   copy:
      src: '{{ manifest }}'
      dest: '/tmp/manifest.zip'
+  register: copy_manifest
 
 - name: upload manifest
   command: hammer subscription upload --organization '{{ organization }}' --file '/tmp/manifest.zip'
+  when: copy_manifest is changed
+  ignore_errors: true
 
-#- name: refresh manifest
-#  command: hammer subscription refresh-manifest --organization '{{ organization }}' 
+#- name: upload manifest
+#  command: hammer subscription upload --organization '{{ organization }}' --file '/tmp/manifest.zip' --repository-url http://satellite1.dc1.example.com/pub/
+#  when: copy_manifest is changed
+#  ignore_errors: true
+
+- name: Set repository settings to immediate download
+  command: hammer settings set --name default_download_policy --value immediate
+  when: copy_manifest is changed
+  ignore_errors: true
+
+# - name: refresh manifest
+#   command: hammer subscription refresh-manifest --organization '{{ organization }}'

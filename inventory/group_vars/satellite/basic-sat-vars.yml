@@ -1,0 +1,301 @@
+---
+
+# specify what ports that should be open in the local firewall
+open_ports:
+- 53/tcp
+- 53/udp
+- 67/udp
+- 69/udp
+- 80/tcp
+- 443/tcp
+- 5647/tcp
+- 8000/tcp
+- 8140/tcp
+- 9090/tcp
+
+# specify the name of your organization
+# if you need to have more than one organization in your satellite,
+# create a separate variable file for each organization
+organization: "MyOrg"
+
+# specify a list of the locations that will be created
+locations:
+- "MyLocation"
+
+# specify where the manifest file is located
+manifest: "files/manifest.zip"
+
+# specify a list of domains that will be created
+domains:
+- "{{ ansible_domain }}"
+
+#sat6_url: "{{ inventory_hostname }}"
+
+admin_username: "admin"
+admin_password: "password"
+
+# specify if a proxy is needed to access external resources, e.g. cdn.redhat.com
+# http_proxy: "http://http_proxy:8080"
+
+# specify a list of settings that should be changed in the satellite
+# each setting need to be specified by name (label) and value
+#settings:
+#- name: use_shortname_for_vms
+#  value: Yes
+
+# if the sat6-template-sync role is used, specify these variables
+#template_sync_prefix: "Synced from git - "
+#template_sync_repo: https://gitlab.example.com/sat6-templates.git
+
+# specify a list of custom user roles that should be created with
+# their corresponding permissions.
+# the permissions have to be divided into different resources,
+# e.g. content views, lifecycle environments and products as in
+# the Manage Content Views role below.
+#user_roles:
+#
+#- name: Import Templates
+#  permissions:
+#  - import_templates
+#
+#- name: Manage Content Views
+#  permissions:
+#  - view_content_views,publish_content_views,promote_or_remove_content_views
+#  - view_lifecycle_environments,promote_or_remove_content_views_to_environments
+#  - view_products
+#
+# specify a list of users that should be added to the satellite
+# password can either be specified with the password in clear text
+# or a random password can be generated as in the examples below
+#users:
+#
+#- username: svc-template-importer
+#  password: "{{ lookup('password', '/root/svc-template-importer length=32') }}"
+#  mail: dev@null.no
+#  auth_source: Internal
+#  roles:
+#  - Import Templates
+#
+#- username: svc-cv-manager
+#  password: "{{ lookup('password', '/root/svc-cv-manager length=32') }}"
+#  mail: dev@null.no
+#  auth_source: Internal
+#  roles:
+#  - Manage Content Views
+
+# speficy a list of lifecycle environments
+# each environment needs to have a name and the name of the previous enviornment
+#lifecycle_environments:
+#- previous: Library
+#  name: DEV
+#
+#- previous: DEV
+#  name: TEST
+#
+#- previous: TEST
+#  name: PROD
+
+# specify which Red Hat repositories that should be synced
+redhat_products:
+  - name: Red Hat Enterprise Linux Server
+    repositories:
+      - name: Red Hat Enterprise Linux 7 Server (Kickstart)
+        basearch: x86_64
+        releasever: "7.6"
+
+# specify a list of third party products that should be created
+# each product contains a list of repositories
+# each repository needs to specify a name, a url to the upstream
+# repository and a url to the corresponding GPG key and a content type
+#custom_products:
+#- name: Extra Packages For Enterprise Linux
+#  repositories:
+#  - name: EPEL-7
+#    url: http://dl.fedoraproject.org/pub/epel/7Server/x86_64/
+#    gpg_key: https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-7
+#    content_type: yum
+
+# set download policy to either on_demand or immediate on all repositories
+# kickstart repos will always set to immediate
+#download_policy: on_demand
+
+# specify the name of a sync plan and the interval that it should run on
+#sync_plan_name: nightly
+#sync_plan_interval: daily
+
+# specify a list of content views that should be created
+# each content view requires a name, a list of repositories,
+# a list of filters and a list of puppet modules.
+# the lists can be empty by setting e.g. "filters: []"
+#content_views:
+#- name: CV-RHEL7
+#  repositories:
+#  - name: Red Hat Enterprise Linux 7 Server RPMs x86_64 7Server
+#    product: Red Hat Enterprise Linux Server
+#  - name: Red Hat Satellite Tools 6.4 for RHEL 7 Server RPMs x86_64
+#    product: Red Hat Enterprise Linux Server
+#  - name: Red Hat Enterprise Linux 7 Server - Extras RPMs x86_64
+#    product: Red Hat Enterprise Linux Server
+#  - name: Red Hat Enterprise Linux 7 Server - Optional RPMs x86_64 7Server
+#    product: Red Hat Enterprise Linux Server
+#  - name: Red Hat Enterprise Linux 7 Server - RH Common RPMs x86_64 7Server
+#    product: Red Hat Enterprise Linux Server
+#  - name: Red Hat Enterprise Linux 7 Server - Supplementary RPMs x86_64 7Server
+#    product: Red Hat Enterprise Linux Server
+#  - name: Red Hat Enterprise Linux 7 Server Kickstart x86_64 7.6
+#    product: Red Hat Enterprise Linux Server
+#  - name: Red Hat Software Collections RPMs for Red Hat Enterprise Linux 7 Server x86_64 7Server
+#    product: Red Hat Software Collections (for RHEL Server)
+#  - name: Red Hat Ansible Engine 2.7 RPMs for Red Hat Enterprise Linux 7 Server x86_64
+#    product: Red Hat Ansible Engine
+#  - name: EPEL-7
+#    product: Extra Packages For Enterprise Linux
+#  filters: []
+#  - name: Include jq
+#    type: rpm
+#    inclusion: true
+#    product: Extra Packages For Enterprise Linux
+#    repositories: EPEL-7
+#    packages:
+#    - jq
+#    - oniguruma
+#  puppet_modules: []
+
+# specify a list of content views that should be created
+#activation_keys:
+#- name: AK-DEV-RHEL7
+#  lifecycle_environment: DEV
+#  content_view: CV-RHEL7
+#  release_version: 7Server
+#  subscriptions:
+#  - Red Hat Enterprise Linux
+#  - Extra Packages For Enterprise Linux
+#- name: AK-TEST-RHEL7
+#  lifecycle_environment: TEST
+#  content_view: CV-RHEL7
+#  release_version: 7Server
+#  subscriptions:
+#  - Red Hat Enterprise Linux
+#  - Extra Packages For Enterprise Linux
+#- name: AK-PROD-RHEL7
+#  lifecycle_environment: PROD
+#  content_view: CV-RHEL7
+#  release_version: 7Server
+#  subscriptions:
+#  - Red Hat Enterprise Linux
+#  - Extra Packages For Enterprise Linux
+
+# specify a list of host groups that should be created
+# the host groups accepts the following parameters:
+#
+#  name (required)
+#  title (required)
+#  parent
+#  lifecycle_environment
+#  content_view
+#  content_source
+#  puppet_environment
+#  compute_resource
+#  compute_profile_id
+#  puppet_master
+#  puppet_ca
+#  puppet_classes (list)
+#  domain
+#  subnet
+#  architecture
+#  os
+#  partition_table
+#  pxe_loader
+#  root_pass
+#  parameters (list)
+#
+#  however, any of the can also be omitted for each host group
+#  if a variable is set in a parent host group, it will be
+#  inherited if it is not overridden in a lower level group
+#
+#  the title consist of the name prefixed by its parents,
+#  e.g. DEV/RHEL7/JBoss for example
+
+#host_groups:
+#
+#- name: DEV
+#  title: DEV
+#  lifecycle_environment: DEV
+##  content_source: sat6.example.com
+#  domain: example.com
+#  parameters: []
+#
+#- parent: DEV
+#  name: RHEL7
+#  title: DEV/RHEL7
+#  content_view: CV-RHEL7
+#  architecture: x86_64
+#  os: RedHat 7.6
+#  parameters:
+#  - name: kt_activation_keys
+#    value: AK-DEV-RHEL7
+#
+#- name: TEST
+#  title: TEST
+#  lifecycle_environment: TEST
+#  content_source: sat6.example.com
+#  domain: example.com
+#  parameters: []
+#
+#- parent: TEST
+#  name: RHEL7
+#  title: TEST/RHEL7
+#  content_view: CV-RHEL7
+#  architecture: x86_64
+#  os: RedHat 7.6
+#  parameters:
+#  - name: kt_activation_keys
+#    value: AK-TEST-RHEL7
+#
+#- name: PROD
+#  title: PROD
+#  lifecycle_environment: PROD
+#  content_source: sat6.example.com
+#  domain: example.com
+#  parameters: []
+#
+#- parent: PROD
+#  name: RHEL7
+#  title: PROD/RHEL7
+#  content_view: CV-RHEL7
+#  architecture: x86_64
+#  os: RedHat 7.6
+#  parameters:
+#  - name: kt_activation_keys
+#    value: AK-PROD-RHEL7
+
+# specify a list of smart class parameters that should be enabled to be overridden.
+# if puppet is not used, just specify and empty list
+#smart_class_parameters_override:
+#- class_name: tuned
+#  parameter_names:
+#  - manage
+#  - profile
+
+# specify a list of compute resources that should be created
+#compute_resources:
+#- name: VMware
+#  provider: Vmware
+#  url: vcenter.example.com
+#  datacenter: DC1
+#  username: username
+#  password: password
+
+# specify a list of subnets that should be created
+#subnets:
+#- name: test-net
+#  network_address: 192.168.122.0
+#  network_mask: 255.255.255.0
+#  gateway_address: 192.168.122.1
+#  primary_dns: 192.168.122.10
+#  secondary_dns: ""
+#  ipam: DHCP
+#  ipam_from_address: 192.168.122.100
+#  ipam_to_address: 192.168.122.199
+#  mtu: 1500
+#  boot_mode: Static

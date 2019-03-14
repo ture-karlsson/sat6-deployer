@@ -1,75 +1,22 @@
 ---
-
 - hosts: satellite
-  vars_files:
-  - vars/sat-vars.yml
-
-  tasks:
-
-  - import_role:
-      name: sat6-organizations
-    tags: organizations
-
-  - import_role:
-      name: sat6-locations
-    tags: locations
-
-  - import_role:
-      name: sat6-manifest
-    tags: manifest
-
-  - import_role:
-      name: sat6-domains
-    tags: domains
-
-  - import_role:
-      name: sat6-subnets
-    tags: subnets
-
-  - import_role:
-      name: sat6-settings
-    tags: settings
-
-  - import_role:
-      name: sat6-user-roles
-    tags: user-roles
-
-  - import_role:
-      name: sat6-users
-    tags: users
-
-  - import_role:
-      name: sat6-lifecycle-environments
-    tags: lifecycle-environments
-
-  - import_role:
-      name: sat6-repositories
-    tags: repositories
-
-  - import_role:
-      name: sat6-repositories-sync
-    tags: repositories-sync
-
-  - import_role:
-      name: sat6-content-views
-    tags: content-views
-
-  - import_role:
-      name: sat6-content-views-publish-and-promote
-    tags: publish-and-promote
-
-  - import_role:
-      name: sat6-activation-keys
-    tags: activation-keys
-
-  - import_role:
-      name: sat6-smart-class-parameters
-    tags: smart-class-parameters
-
-  - import_role:
-      name: sat6-host-groups
-    tags: host-groups
-
-#  - import_role:
-#      name: sat6-template-sync
-#    tags: template-sync
+  #  vars_files:
+  #    - vars/sat-vars.yml
+  roles:
+    - {role: 'sat6-organizations', tags: 'sat6-organizations, organizations'}
+    - {role: 'sat6-locations', tags: 'sat6-locations, locations'}
+    - {role: 'sat6-manifest', tags: 'sat6-manifest, manifest'}
+    - {role: 'sat6-domains', tags: 'sat6-domains, domains'}
+    - {role: 'sat6-subnets', tags: 'sat6-subnets, subnets'}
+    - {role: 'sat6-settings', tags: 'sat6-settings, settings'}
+    - {role: 'sat6-user-roles', tags: 'sat6-user-roles, user-roles'}
+    - {role: 'sat6-users', tags: 'sat6-users, users'}
+    - {role: 'sat6-lifecycle-environments', tags: 'sat6-lifecycle-environments, lifecycle-environments'}
+    - {role: 'sat6-repositories', tags: 'sat6-repositories, repositories'}
+    - {role: 'sat6-repositories-sync', tags: 'sat6-repositories-sync, repositories-sync'}
+    - {role: 'sat6-content-views', tags: 'sat6-content-views, content-views'}
+    - {role: 'sat6-content-views-publish-and-promote', tags: 'sat6-content-views-publish-and-promote, publish-and-promote'}
+    - {role: 'sat6-activation-keys', tags: 'sat6-activation-keys, activation-keys'}
+    - {role: 'sat6-smart-class-parameters', tags: 'sat6-smart-class-parameters, smart-class-parameters'}
+    - {role: 'sat6-host-groups', tags: 'sat6-host-groups, host-groups'}
+    # - {role: 'sat6-template-sync', tags: 'sat6-template-sync, template-sync'}

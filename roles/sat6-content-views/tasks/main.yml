@@ -1,78 +1,85 @@
 ---
-#- name: get current content views
-#  shell: hammer --csv content-view list --nondefault true | tail -n +2 | awk -F ',' '{print $2}'
-#  register: current_content_views
-#  changed_when: false
+- name: Configure Content Views
+  when: content_views is defined
+  block:
+    # - name: get current content views
+    #   shell: hammer --csv content-view list --nondefault true | tail -n +2 | awk -F ',' '{print $2}'
+    #   register: current_content_views
+    #   changed_when: false
 
-- name: ensure content views exist
-  command: hammer content-view create --organization '{{ organization }}' --name '{{ item.name }}'
-  with_items: "{{ content_views }}"
-  register: content_view_output
-  changed_when: content_view_output.rc == 0
-  failed_when: content_view_output.rc == 70
+    - name: ensure content views exist
+      command: hammer content-view create --organization '{{ organization }}' --name '{{ item.name }}'
+      with_items: "{{ content_views }}"
+      register: content_view_output
+      changed_when: content_view_output.rc == 0
+      failed_when: content_view_output.rc == 70
 
-# it is impossible to know if this is a change or not since
-# hammer returns 0 both if the repository was already associated or not 
-- name: associate repositories to content views
-  command: >
-    hammer content-view add-repository
-    --organization '{{ organization }}'
-    --name '{{ item.0.name }}'
-    --repository '{{ item.1.name }}'
-    --product '{{ item.1.product }}'
-  with_subelements:
-  - "{{ content_views }}"
-  - repositories
+    # it is impossible to know if this is a change or not since
+    # hammer returns 0 both if the repository was already associated or not
+    - name: associate repositories to content views
+      command: >
+        hammer content-view add-repository
+        --organization '{{ organization }}'
+        --name '{{ item.0.name }}'
+        --repository '{{ item.1.name }}'
+        --product '{{ item.1.product }}'
+      when: content_view_output is changed
+      with_subelements:
+      - "{{ content_views }}"
+      - repositories
 
-#- name: remove existing content view filters
-#  include_tasks: remove-filters.yml content_view={{ item }}
-#  with_items: "{{ content_views }}"
-#  loop_control:
-#    loop_var: content_view
+    # - name: remove existing content view filters
+    #   when: filters is defined
+    #   include_tasks: remove-filters.yml content_view={{ item }}
+    #   with_items: "{{ content_views }}"
+    #   loop_control:
+    #     loop_var: content_view
 
-- name: ensure content view filters exist
-  command: >
-    hammer content-view filter create
-    --organization '{{ organization }}'
-    --content-view '{{ item.0.name }}'
-    --name '{{ item.1.name }}'
-    --inclusion '{{ item.1.inclusion }}'
-    --type '{{ item.1.type }}'
-    --product '{{ item.1.product }}'
-    --repositories '{{ item.1.repositories }}'
-  with_subelements:
-  - "{{ content_views }}"
-  - filters
-  register: filter_output
-  changed_when: filter_output.rc == 0
-  failed_when: filter_output.rc == 70 
+    - name: ensure content view filters exist
+      when: filters is defined
+      command: >
+        hammer content-view filter create
+        --organization '{{ organization }}'
+        --content-view '{{ item.0.name }}'
+        --name '{{ item.1.name }}'
+        --inclusion '{{ item.1.inclusion }}'
+        --type '{{ item.1.type }}'
+        --product '{{ item.1.product }}'
+        --repositories '{{ item.1.repositories }}'
+      with_subelements:
+      - "{{ content_views }}"
+      - filters
+      register: filter_output
+      changed_when: filter_output.rc == 0
+      failed_when: filter_output.rc == 70
 
-- name: ensure content view filter rules exist
-  command: >
-    hammer content-view filter rule create
-    --organization '{{ organization }}'
-    --content-view '{{ item.0.name }}'
-    --content-view-filter '{{ item.1.name }}'
-    --names '{{ item.1.packages|join(', ') }}'
-    --architecture 'x86_64'
-  with_subelements:
-  - "{{ content_views }}"
-  - filters
-  register: rule_output
-  changed_when: rule_output.rc == 0
-  failed_when: rule_output.rc == 70
+    - name: ensure content view filter rules exist
+      when: filters is defined
+      command: >
+        hammer content-view filter rule create
+        --organization '{{ organization }}'
+        --content-view '{{ item.0.name }}'
+        --content-view-filter '{{ item.1.name }}'
+        --names '{{ item.1.packages|join(', ') }}'
+        --architecture 'x86_64'
+      with_subelements:
+      - "{{ content_views }}"
+      - filters
+      register: rule_output
+      changed_when: rule_output.rc == 0
+      failed_when: rule_output.rc == 70
 
-- name: associate puppet modules to content views
-  command: >
-    hammer content-view puppet-module add 
-    --organization '{{ organization }}'
-    --content-view '{{ item.0.name }}'
-    --name '{{ item.1.name }}'
-    --author '{{ item.1.author }}'
-  with_subelements:
-  - "{{ content_views }}"
-  - puppet_modules
-  register: add_puppet_module_output
-  failed_when: add_puppet_module_output.rc != 0 and "There is already a module" in add_puppet_module_output.stdout
-  changed_when: add_puppet_module_output.rc == 0
-
+    - name: associate puppet modules to content views
+      when: puppet_modules is defined
+      command: >
+        hammer content-view puppet-module add
+        --organization '{{ organization }}'
+        --content-view '{{ item.0.name }}'
+        --name '{{ item.1.name }}'
+        --author '{{ item.1.author }}'
+      with_subelements:
+      - "{{ content_views }}"
+      - puppet_modules
+      register: add_puppet_module_output
+      failed_when: add_puppet_module_output.rc != 0 and "There is already a module" in add_puppet_module_output.stdout
+      changed_when: add_puppet_module_output.rc == 0

@@ -1,18 +1,20 @@
 ---
+- name: Configure User Roles
+  when: user_roles is defined
+  block:
+    - name: ensure role exist
+      command: hammer role create --name '{{ item.name }}'
+      register: create_role_output
+      failed_when: create_role_output.rc != 0 and create_role_output.rc != 65
+      changed_when: create_role_output.rc == 0
+      with_items: "{{ user_roles }}"
 
-- name: ensure role exist
-  command: hammer role create --name '{{ item.name }}'
-  register: create_role_output
-  failed_when: create_role_output.rc != 0 and create_role_output.rc != 65
-  changed_when: create_role_output.rc == 0
-  with_items: "{{ user_roles }}"
-
-- name: add filters to roles
-  command: >
-    hammer filter create
-    --role '{{ item.0.name }}'
-    --permissions '{{ item.1 }}'
-  with_subelements:
-  - "{{ user_roles }}"
-  - permissions
+    - name: add filters to roles
+      command: >
+        hammer filter create
+        --role '{{ item.0.name }}'
+        --permissions '{{ item.1 }}'
+      with_subelements:
+      - "{{ user_roles }}"
+      - permissions
 

@@ -1,28 +1,30 @@
 ---
+- name: Subnet Configuration
+  when: subnets is defined
+  block:
+    - name: get current subnets
+      shell: hammer --csv subnet list | tail -n +2 | awk -F ',' '{print $2}'
+      register: current_subnets
+      changed_when: false
 
-- name: get current subnets
-  shell: hammer --csv subnet list | tail -n +2 | awk -F ',' '{print $2}'
-  register: current_subnets
-  changed_when: false
-
-- name: ensure subnets are present
-  command: >
-    hammer subnet create
-    --name '{{ item.name }}'
-    --organization '{{ organization }}'
-    --locations '{{ locations|join(',') }}'
-    --domains '{{ domains|join(',') }}'
-    --tftp-id 1 
-    --network '{{ item.network_address }}'
-    --mask '{{ item.network_mask }}'
-    {% if item.gateway_address is defined %} --gateway '{{ item.gateway_address }}'{% endif %}
-    {% if item.primary_dns is defined %} --dns-primary '{{ item.primary_dns }}'{% endif %}
-    {% if item.secondary_dns is defined %} --dns-secondary '{{ item.secondary_dns }}'{% endif %}
-    --ipam '{{ item.ipam }}'
-    {% if item.ipam_from_address is defined %} --from '{{ item.ipam_from_address }}'{% endif %}
-    {% if item.ipam_to_address is defined %} --to '{{ item.ipam_to_address }}'{% endif %}
-    {% if item.vlan_id is defined %} --vlanid '{{ item.vlan_id }}'{% endif %}
-    --boot-mode '{{ item.boot_mode }}'
-    --mtu '{{ item.mtu }}'
-  when: 'item.name not in current_subnets.stdout'
-  with_items: "{{ subnets }}"
+    - name: ensure subnets are present
+      command: >
+        hammer subnet create
+        --name '{{ item.name }}'
+        --organization '{{ organization }}'
+        --locations '{{ locations|join(',') }}'
+        --domains '{{ domains|join(',') }}'
+        --tftp-id 1
+        --network '{{ item.network_address }}'
+        --mask '{{ item.network_mask }}'
+        {% if item.gateway_address is defined %} --gateway '{{ item.gateway_address }}'{% endif %}
+        {% if item.primary_dns is defined %} --dns-primary '{{ item.primary_dns }}'{% endif %}
+        {% if item.secondary_dns is defined %} --dns-secondary '{{ item.secondary_dns }}'{% endif %}
+        --ipam '{{ item.ipam }}'
+        {% if item.ipam_from_address is defined %} --from '{{ item.ipam_from_address }}'{% endif %}
+        {% if item.ipam_to_address is defined %} --to '{{ item.ipam_to_address }}'{% endif %}
+        {% if item.vlan_id is defined %} --vlanid '{{ item.vlan_id }}'{% endif %}
+        --boot-mode '{{ item.boot_mode }}'
+        --mtu '{{ item.mtu }}'
+      when: 'item.name not in current_subnets.stdout'
+      with_items: "{{ subnets }}"
