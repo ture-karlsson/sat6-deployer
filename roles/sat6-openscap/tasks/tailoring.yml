@@ -1,0 +1,43 @@
+# expects the profile dict passed in with var profile
+
+- name: write tailoring file to tmp
+  copy:
+    src: "{{ policy.tailoring_file_name }}"
+    dest: "/tmp/{{ policy.tailoring_file_name }}"
+
+- name: Upload/Create tailoring file
+  command: >
+    hammer tailoring-file create  --original-filename {{ policy.tailoring_file_name }}
+    --organization "{{ organization }}"
+    --scap-file /tmp/{{ policy.tailoring_file_name }}  
+    --name {{ policy.sat6_tailoring_file_name }} 
+    --location-ids 2,6,8,3,7,5
+  register: tailoring_upload
+  failed_when: false
+
+- fail:
+    msg: "Something went wrong uploading the Tailoring file. StdErr: {{ tailoring_upload.stderr }}"
+  when: "'Name has already been taken' not in tailoring_upload.stderr and tailoring_upload.rc != 0"
+
+- name: Update tailoring file
+  command: "hammer tailoring-file update --name '{{ policy.sat6_tailoring_file_name}}' --scap-file '/tmp/{{ policy.tailoring_file_name }}'"
+  when: "'Name has already been taken' in tailoring_upload.stderr"
+  
+
+- name: Get the tailoring file id
+  shell: "hammer tailoring-file list  | grep {{ policy.sat6_tailoring_file_name }} | cut -d' ' -f 1"
+  register: tailoring_file_id
+
+- set_fact:
+    tailoring_file_id: "{{ tailoring_file_id.stdout }}"
+
+- name: Get tailoring Profile ID
+  shell: "hammer --output yaml tailoring-file info --id {{ tailoring_file_id }} | grep '    Id:' | awk '{ print $2 }'"
+  register: tailoring_file_profile_id
+
+- set_fact:
+    tailoring_file_profile_id: "{{ tailoring_file_profile_id.stdout }}"
+
+- name: "update Profile {{ policy.name }} with tailoring file"
+  command: "hammer policy update --name '{{ policy.name }}' --tailoring-file '{{ policy.sat6_tailoring_file_name }}' --tailoring-file-profile-id '{{ tailoring_file_profile_id }}'" 
+

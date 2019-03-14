@@ -1,0 +1,12 @@
+#- name: Upload the OpenSCAP content
+#  command: foreman-rake foreman_openscap:bulk_upload:default
+
+- include_tasks: policy.yml
+  with_items: "{{ openscap_policies }}"
+  loop_control:
+    loop_var: policy
+
+- include_tasks: tailoring.yml
+  with_items: "{{ openscap_policies }}"
+  loop_control:
+    loop_var: policy

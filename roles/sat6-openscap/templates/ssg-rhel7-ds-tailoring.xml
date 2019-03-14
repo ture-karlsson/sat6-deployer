@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xccdf:Tailoring xmlns:xccdf="http://checklists.nist.gov/xccdf/1.2" id="xccdf_scap-workbench_tailoring_default">
+  <xccdf:benchmark href="C:/Program Files (x86)/scap-workbench/ssg/ssg-rhel7-ds.xml"/>
+  <xccdf:version time="2019-02-05T14:13:42">1</xccdf:version>
+  <xccdf:Profile id="xccdf_com.example_profile_stig-rhel7-disa_stig_customized" extends="xccdf_org.ssgproject.content_profile_stig-rhel7-disa">
+    <xccdf:title xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US" override="true">DISA STIG for Red Hat Enterprise Linux 7 [CUSTOMIZED]</xccdf:title>
+    <xccdf:description xmlns:xhtml="http://www.w3.org/1999/xhtml" xml:lang="en-US" override="true">
+This profile contains configuration checks that align to the 
+DISA STIG for Red Hat Enterprise Linux V1R1.
+
+In addition to being applicable to RHEL7, DISA recognizes this 
+configuration baseline as applicable to the operating system
+tier of Red Hat technologies that are based off RHEL7, such as RHEL
+Server,  RHV-H, RHEL for HPC, RHEL Workstation, and Red Hat 
+Storage deployments.
+</xccdf:description>
+    <xccdf:select idref="xccdf_org.ssgproject.content_rule_ensure_gpgcheck_repo_metadata" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_group_aide" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_rule_aide_use_fips_hashes" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_rule_aide_verify_ext_attributes" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_rule_aide_verify_acls" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_rule_aide_scan_notification" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_rule_aide_periodic_cron_checking" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_rule_aide_build_database" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_rule_package_aide_installed" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_group_mcafee_security_software" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_rule_mcafee_antivirus_definitions_updated" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_rule_service_nails_enabled" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_rule_install_mcafee_antivirus" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_group_mcafee_hbss_software" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_rule_install_mcafee_hbss_pa" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_rule_install_mcafee_hbss_accm" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_rule_install_mcafee_hbss_hips" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_rule_install_mcafee_cma_rt" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_group_endpoint_security_software" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_group_gnome_login_screen" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_rule_dconf_gnome_login_retries" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_rule_dconf_gnome_enable_smartcard_auth" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_rule_dconf_gnome_disable_restart_shutdown" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_rule_dconf_gnome_disable_user_list" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_rule_gnome_gdm_disable_guest_login" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_rule_gnome_gdm_disable_automatic_login" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_group_gnome_screen_locking" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_rule_dconf_gnome_session_user_locks" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_rule_dconf_gnome_screensaver_user_info" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_rule_dconf_gnome_screensaver_mode_blank" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_rule_dconf_gnome_screensaver_lock_delay" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_rule_dconf_gnome_screensaver_lock_enabled" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_rule_dconf_gnome_screensaver_idle_activation_enabled" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_rule_dconf_gnome_screensaver_idle_delay" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_group_gnome" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_rule_sudo_remove_nopasswd" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_rule_sudo_remove_no_authenticate" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_group_sudo" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_rule_accounts_minimum_age_login_defs" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_rule_accounts_maximum_age_login_defs" selected="false"/>
+    <xccdf:select idref="xccdf_org.ssgproject.content_group_password_expiration" selected="false"/>
+  </xccdf:Profile>
+</xccdf:Tailoring>
+
