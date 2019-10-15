@@ -1,0 +1,69 @@
+- name: get scap content id
+  shell: "hammer --csv scap-content list | grep '{{ policy.scap_content_name }}' | cut -d ',' -f 1"
+  register: scap_content_id 
+  
+- debug:
+    msg: " {{  scap_content_id }}"
+- set_fact:
+    scap_content_id: "{{ scap_content_id.stdout }}"
+
+- name: get scap content profile id.. id 
+  shell: "hammer scap-content info --id {{ scap_content_id }} | grep '{{ policy.scap_content_profile_id }}' -B 1 | grep 'Id' | awk '{ print $2 }'"
+  register: profile_id
+
+- debug:
+    msg: "{{ profile_id }}"
+- set_fact:
+    profile_id: "{{ profile_id.stdout }}" 
+
+# Gotta get the locations right
+- name: get all current location names
+  shell:  'hammer --csv location list | cut -d "," -f 2 | tail -n +2'
+  register: avail_locations
+  when: "'all' in policy.locations"
+
+- set_fact:
+    policy_locations: ""
+- name: create comma seperated location list from all available locations 
+  set_fact:
+    policy_locations: "{{ item }},{{ policy_locations }}"
+  with_items: "{{ avail_locations.stdout_lines }}"
+  when: "'all' in policy.locations"
+
+- name: remove last commna from location string
+  set_fact:
+    policy_locations: "{{ policy_locations[:-1] }}"
+  when: "'all' in policy.locations"
+
+- set_fact:
+    policy_locations: "{{ policy.locations }}"
+  when: "'all' not in policy.locations"
+
+- name: create OpenSCAP policy
+  command: > 
+    hammer policy create --name '{{ policy.name }}'
+    --scap-content-id '{{ scap_content_id }}'
+    --scap-content-profile-id '{{ profile_id }}'
+    --period '{{ policy.period }}'
+    --cron-line '{{ policy.cron_line }}'
+    --organizations '{{ organization }}'
+    --locations '{{ policy_locations }}'
+  register: policy_creation
+  failed_when: false
+  
+- fail: 
+    msg: "Something went wrong when creating the OpenSCAP policy: stdout: {{ policy_creation.stdout }} stderr: {{ policy_creation.stderr }}"
+  when: "'Name has already been taken' not in policy_creation.stderr and policy_creation.rc != 0"
+
+# Seems like locations won't be updated for some reason
+- name: Update OpenSCAP policy
+  command: > 
+    hammer policy update --name '{{ policy.name }}'
+    --scap-content-id '{{ scap_content_id }}'
+    --scap-content-profile-id '{{ profile_id }}'
+    --period '{{ policy.period }}'
+    --cron-line '{{ policy.cron_line }}'
+    --organizations '{{ organization }}'
+    --locations '{{ policy_locations }}'
+  register: policy_creation
+  when: "'Name has already been taken' in policy_creation.stderr and policy_creation.rc != 0"
