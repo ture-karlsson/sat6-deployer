@@ -28,12 +28,19 @@ subscription-manager repos \
 --enable=rhel-server-rhscl-7-rpms \
 --enable=rhel-server-7-satellite-6-beta-rpms \
 --enable=rhel-7-server-satellite-maintenance-6-beta-rpms \
---enable=rhel-7-server-ansible-2.8-rpms 
+--enable=rhel-7-server-ansible-2.8-rpms
+
+yum clean all
+yum repolist
+```
+
+Install the following packages:
+```bash
+yum -y install git ansible
 ```
 
 ### Clone this repository
 ```bash
-yum -y install git
 git clone https://github.com/ture-karlsson/sat6-deployer.git
 cd sat6-deployer/
 ```
