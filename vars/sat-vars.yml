@@ -27,7 +27,7 @@ locations:
 
 # specify username and password of the initial admin user
 username: admin
-password: redhat666
+password: redhat123
 
 # specify where the manifest file is located
 manifest: "files/manifest.zip"
@@ -133,7 +133,7 @@ custom_products:
     content_type: yum
 
 # set download policy to either on_demand or immediate on all repositories
-# kickstart repos will always set to immediate
+# immediate is generally recommended for production usage, but on_demand is useful in test environments
 download_policy: on_demand
 
 # specify the name of a sync plan and the interval that it should run on
@@ -210,6 +210,7 @@ content_views:
   filters: []
 
 # specify a list of content views that should be created
+# subscription names can be found under Content -> Subscriptions
 activation_keys:
 
 - name: AK-DEV-RHEL7
@@ -217,7 +218,7 @@ activation_keys:
   content_view: CV-RHEL7
   release_version: 7Server
   subscriptions:
-  - name: Employee SKU 
+  - name: Red Hat Enterprise Linux
   - name: Extra Packages For Enterprise Linux
 
 - name: AK-TEST-RHEL7
@@ -225,7 +226,7 @@ activation_keys:
   content_view: CV-RHEL7
   release_version: 7Server
   subscriptions:
-  - name: Employee SKU 
+  - name: Red Hat Enterprise Linux 
   - name: Extra Packages For Enterprise Linux
 
 - name: AK-PROD-RHEL7
@@ -233,7 +234,7 @@ activation_keys:
   content_view: CV-RHEL7
   release_version: 7Server
   subscriptions:
-  - name: Employee SKU 
+  - name: Red Hat Enterprise Linux 
   - name: Extra Packages For Enterprise Linux
 
 - name: AK-DEV-RHEL8
@@ -241,21 +242,21 @@ activation_keys:
   content_view: CV-RHEL8
   release_version: 8
   subscriptions:
-  - name: Employee SKU  
+  - name: Red Hat Enterprise Linux  
 
 - name: AK-TEST-RHEL8
   lifecycle_environment: TEST
   content_view: CV-RHEL8
   release_version: 8
   subscriptions:
-  - name: Employee SKU
+  - name: Red Hat Enterprise Linux
 
 - name: AK-PROD-RHEL8
   lifecycle_environment: PROD
   content_view: CV-RHEL8
   release_version: 8
   subscriptions:
-  - name: Employee SKU
+  - name: Red Hat Enterprise Linux
 
 
 # specify a list of host groups that should be created.
