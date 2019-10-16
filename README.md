@@ -49,6 +49,13 @@ cd sat6-deployer/
 ```bash
 git clone https://github.com/theforeman/foreman-ansible-modules.git
 ```
+foreman-ansible-modules have a dependency on apypie. It can be installed with pip that is found in EPEL:
+```bash
+yum -y localinstall https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+yum -y install python2-pip
+pip install apypie
+yum -y remove epel-release
+```
 
 ## Usage
 
