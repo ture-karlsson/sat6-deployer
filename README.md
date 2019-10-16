@@ -55,15 +55,17 @@ git clone https://github.com/theforeman/foreman-ansible-modules.git
 ### hosts file
 Make sure your Satellite hostname is the only host in the "satellite" group in the hosts file. Replace "sat6" with your hostname, e.g:
 ```bash
-# sed -i "s/sat6.example.com/$(hostname)/" hosts
-# cat hosts
+sed -i "s/sat6.example.com/$(hostname)/" hosts
+```
+The content of hosts you be something like this:
+```bash
 [satellite]
 your-satellite.hostname.com
 ```
 
 ### Add your manifest file to the files directory
 ```bash
-# ls files/
+ls files/
 manifest.zip
 ```
 
