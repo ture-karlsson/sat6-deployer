@@ -22,13 +22,13 @@ subscription-manager attach --pool <pool ID of your Satellite subscription>
 
 Ensure that you have access to the correct repositories:
 ```bash
-subscription-manager repos \
---disable="*"
---enable=rhel-7-server-rpms \
---enable=rhel-server-rhscl-7-rpms \
---enable=rhel-7-server-satellite-6.4-rpms \
---enable=rhel-7-server-satellite-maintenance-6-rpms \
---enable=rhel-7-server-ansible-2.6-rpms
+subscription-manager repos
+--disable '*'
+--enable=rhel-7-server-rpms
+--enable=rhel-server-rhscl-7-rpms
+--enable=rhel-server-7-satellite-6-beta-rpms
+--enable=rhel-7-server-satellite-maintenance-6-beta-rpms
+--enable=rhel-7-server-ansible-2.8-rpms
 ```
 
 ### Clone this repository
