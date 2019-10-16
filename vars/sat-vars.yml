@@ -8,10 +8,13 @@ open_ports:
 - 69/udp
 - 80/tcp
 - 443/tcp
+- 5000/tcp
 - 5647/tcp
 - 8000/tcp
 - 8140/tcp
 - 9090/tcp
+
+server_url: "https://{{ ansible_nodename }}"
 
 # specify the name of your organization
 # if you need to have more than one organization in your satellite,
@@ -21,6 +24,10 @@ organization: "Ture"
 # specify a list of the locations that will be created
 locations:
 - "Copenhagen"
+
+# specify username and password of the initial admin user
+username: admin
+password: redhat666
 
 # specify where the manifest file is located
 manifest: "files/manifest.zip"
@@ -32,113 +39,83 @@ domains:
 # specify if a proxy is needed to access external resources, e.g. cdn.redhat.com
 # http_proxy: "http://http_proxy:8080"
 
-# specify a list of settings that should be changed in the satellite
-# each setting need to be specified by name (label) and value
-settings:
-
-- name: use_shortname_for_vms
-  value: Yes
-
-# if the sat6-template-sync role is used, specify these variables
-#template_sync_prefix: "Synced from git - "
-#template_sync_repo: https://gitlab.example.com/sat6-templates.git
-
-# specify a list of custom user roles that should be created with
-# their corresponding permissions.
-# the permissions have to be divided into different resources,
-# e.g. content views, lifecycle environments and products as in
-# the Manage Content Views role below.
-user_roles:
-
-- name: Import Templates
-  permissions:
-  - import_templates
-
-- name: Manage Content Views
-  permissions:
-  - view_content_views,publish_content_views,promote_or_remove_content_views
-  - view_lifecycle_environments,promote_or_remove_content_views_to_environments
-  - view_products
-
-# specify a list of users that should be added to the satellite
-# password can either be specified with the password in clear text
-# or a random password can be generated as in the examples below
-users:
-
-- username: svc-template-importer
-  password: "{{ lookup('password', '/root/svc-template-importer length=32') }}"
-  mail: dev@null.no
-  auth_source: Internal
-  roles:
-  - Import Templates
-
-- username: svc-cv-manager
-  password: "{{ lookup('password', '/root/svc-cv-manager length=32') }}"
-  mail: dev@null.no
-  auth_source: Internal
-  roles:
-  - Manage Content Views
-
 # speficy a list of lifecycle environments
 # each environment needs to have a name and the name of the previous enviornment
 lifecycle_environments:
-- previous: Library
+- prior: Library
   name: DEV
 
-- previous: DEV
+- prior: DEV
   name: TEST
 
-- previous: TEST
+- prior: TEST
   name: PROD
 
-# specify which Red Hat repositories that should be synced
+# specify which Red Hat repositories that should be enabled
 redhat_products:
 
 - name: Red Hat Enterprise Linux Server
   
   repositories:
   
-  - name: Red Hat Satellite Tools 6.4 (for RHEL 7 Server) (RPMs)
-    basearch: x86_64
-
   - name: Red Hat Enterprise Linux 7 Server (RPMs)
-    basearch: x86_64
-    releasever: 7Server
-
-  - name: Red Hat Enterprise Linux 7 Server - Optional (RPMs)
-    basearch: x86_64
-    releasever: 7Server
-
-  - name: Red Hat Enterprise Linux 7 Server - Extras (RPMs)
-    basearch: x86_64
-
-  - name: Red Hat Enterprise Linux 7 Server - Supplementary (RPMs)
     basearch: x86_64
     releasever: 7Server
 
   - name: Red Hat Enterprise Linux 7 Server (Kickstart) 
     basearch: x86_64
-    releasever: "7.6"
+    releasever: "7.7"
 
-  - name: Red Hat Enterprise Linux 7 Server - RH Common (RPMs)
-    basearch: x86_64
-    releasever: 7Server
+#  - name: Red Hat Satellite Tools 6.6 (for RHEL 7 Server) (RPMs)
+#    basearch: x86_64
 
-- name: Red Hat Software Collections (for RHEL Server)
-  
+#  - name: Red Hat Enterprise Linux 7 Server - Optional (RPMs)
+#    basearch: x86_64
+#    releasever: 7Server
+
+#  - name: Red Hat Enterprise Linux 7 Server - Extras (RPMs)
+#    basearch: x86_64
+
+#  - name: Red Hat Enterprise Linux 7 Server - Supplementary (RPMs)
+#    basearch: x86_64
+#    releasever: 7Server
+
+#  - name: Red Hat Enterprise Linux 7 Server - RH Common (RPMs)
+#    basearch: x86_64
+#    releasever: 7Server
+
+- name: Red Hat Enterprise Linux for x86_64
+
   repositories:
 
-  - name: Red Hat Software Collections RPMs for Red Hat Enterprise Linux 7 Server
-    basearch: x86_64
-    releasever: 7Server
+  - name: Red Hat Enterprise Linux 8 for x86_64 - BaseOS (RPMs)
+    releasever: 8
+
+  - name: Red Hat Enterprise Linux 8 for x86_64 - AppStream (RPMs)
+    releasever: 8
+
+  - name: Red Hat Enterprise Linux 8 for x86_64 - BaseOS (Kickstart)
+    releasever: 8.0
+
+  - name: Red Hat Enterprise Linux 8 for x86_64 - AppStream (Kickstart)
+    releasever: 8.0
 
 
-- name: Red Hat Ansible Engine
+#- name: Red Hat Software Collections (for RHEL Server)
+#  
+#  repositories:
+#
+#  - name: Red Hat Software Collections RPMs for Red Hat Enterprise Linux 7 Server
+#    basearch: x86_64
+#    releasever: 7Server
 
-  repositories:
-  
-  - name: Red Hat Ansible Engine 2.7 RPMs for Red Hat Enterprise Linux 7 Server
-    basearch: x86_64
+
+#- name: Red Hat Ansible Engine
+#
+#  repositories:
+#  
+#  - name: Red Hat Ansible Engine 2.7 RPMs for Red Hat Enterprise Linux 7 Server
+#    basearch: x86_64
 
 # specify a list of third party products that should be created
 # each product contains a list of repositories
@@ -176,29 +153,29 @@ content_views:
   - name: Red Hat Enterprise Linux 7 Server RPMs x86_64 7Server
     product: Red Hat Enterprise Linux Server 
 
-  - name: Red Hat Satellite Tools 6.4 for RHEL 7 Server RPMs x86_64
+#  - name: Red Hat Satellite Tools 6.4 for RHEL 7 Server RPMs x86_64
+#    product: Red Hat Enterprise Linux Server
+#
+#  - name: Red Hat Enterprise Linux 7 Server - Extras RPMs x86_64
+#    product: Red Hat Enterprise Linux Server
+#
+#  - name: Red Hat Enterprise Linux 7 Server - Optional RPMs x86_64 7Server
+#    product: Red Hat Enterprise Linux Server
+#
+#  - name: Red Hat Enterprise Linux 7 Server - RH Common RPMs x86_64 7Server 
+#    product: Red Hat Enterprise Linux Server
+#
+#  - name: Red Hat Enterprise Linux 7 Server - Supplementary RPMs x86_64 7Server
+#    product: Red Hat Enterprise Linux Server
+#
+  - name: Red Hat Enterprise Linux 7 Server Kickstart x86_64 7.7
     product: Red Hat Enterprise Linux Server
-
-  - name: Red Hat Enterprise Linux 7 Server - Extras RPMs x86_64
-    product: Red Hat Enterprise Linux Server
-
-  - name: Red Hat Enterprise Linux 7 Server - Optional RPMs x86_64 7Server
-    product: Red Hat Enterprise Linux Server
-
-  - name: Red Hat Enterprise Linux 7 Server - RH Common RPMs x86_64 7Server 
-    product: Red Hat Enterprise Linux Server
-
-  - name: Red Hat Enterprise Linux 7 Server - Supplementary RPMs x86_64 7Server
-    product: Red Hat Enterprise Linux Server
-
-  - name: Red Hat Enterprise Linux 7 Server Kickstart x86_64 7.6
-    product: Red Hat Enterprise Linux Server
-
-  - name: Red Hat Software Collections RPMs for Red Hat Enterprise Linux 7 Server x86_64 7Server
-    product: Red Hat Software Collections (for RHEL Server)
-
-  - name: Red Hat Ansible Engine 2.7 RPMs for Red Hat Enterprise Linux 7 Server x86_64
-    product: Red Hat Ansible Engine
+#
+#  - name: Red Hat Software Collections RPMs for Red Hat Enterprise Linux 7 Server x86_64 7Server
+#    product: Red Hat Software Collections (for RHEL Server)
+#
+#  - name: Red Hat Ansible Engine 2.7 RPMs for Red Hat Enterprise Linux 7 Server x86_64
+#    product: Red Hat Ansible Engine
 
   - name: EPEL-7
     product: Extra Packages For Enterprise Linux
@@ -214,7 +191,23 @@ content_views:
     - jq
     - oniguruma
 
-  puppet_modules: []
+- name: CV-RHEL8
+
+  repositories:
+
+  - name: Red Hat Enterprise Linux 8 for x86_64 - BaseOS RPMs 8
+    product: Red Hat Enterprise Linux for x86_64 
+
+  - name: Red Hat Enterprise Linux 8 for x86_64 - AppStream RPMs 8 
+    product: Red Hat Enterprise Linux for x86_64 
+
+  - name: Red Hat Enterprise Linux 8 for x86_64 - BaseOS Kickstart 8.0
+    product: Red Hat Enterprise Linux for x86_64 
+
+  - name: Red Hat Enterprise Linux 8 for x86_64 - AppStream Kickstart 8.0
+    product: Red Hat Enterprise Linux for x86_64 
+
+  filters: []
 
 # specify a list of content views that should be created
 activation_keys:
@@ -224,117 +217,155 @@ activation_keys:
   content_view: CV-RHEL7
   release_version: 7Server
   subscriptions:
-  - Red Hat Enterprise Linux
-  - Extra Packages For Enterprise Linux
+  - name: Employee SKU 
+  - name: Extra Packages For Enterprise Linux
 
 - name: AK-TEST-RHEL7
   lifecycle_environment: TEST
   content_view: CV-RHEL7
   release_version: 7Server
   subscriptions:
-  - Red Hat Enterprise Linux
-  - Extra Packages For Enterprise Linux
+  - name: Employee SKU 
+  - name: Extra Packages For Enterprise Linux
 
 - name: AK-PROD-RHEL7
   lifecycle_environment: PROD
   content_view: CV-RHEL7
   release_version: 7Server
   subscriptions:
-  - Red Hat Enterprise Linux
-  - Extra Packages For Enterprise Linux
+  - name: Employee SKU 
+  - name: Extra Packages For Enterprise Linux
 
-# specify a list of host groups that should be created
-# the host groups accepts the following parameters:
-#
-#  name (required)
-#  title (required)
-#  parent
-#  lifecycle_environment
-#  content_view
-#  content_source
-#  puppet_environment
-#  compute_resource
-#  compute_profile_id
-#  puppet_master
-#  puppet_ca
-#  puppet_classes (list)
-#  domain
-#  subnet
-#  architecture
-#  os
-#  partition_table
-#  pxe_loader
-#  root_pass
-#  parameters (list)
-#
-#  however, any of the can also be omitted for each host group
-#  if a variable is set in a parent host group, it will be
-#  inherited if it is not overridden in a lower level group
-#
-#  the title consist of the name prefixed by its parents,
-#  e.g. DEV/RHEL7/JBoss for example
+- name: AK-DEV-RHEL8
+  lifecycle_environment: DEV
+  content_view: CV-RHEL8
+  release_version: 8
+  subscriptions:
+  - name: Employee SKU  
+
+- name: AK-TEST-RHEL8
+  lifecycle_environment: TEST
+  content_view: CV-RHEL8
+  release_version: 8
+  subscriptions:
+  - name: Employee SKU
+
+- name: AK-PROD-RHEL8
+  lifecycle_environment: PROD
+  content_view: CV-RHEL8
+  release_version: 8
+  subscriptions:
+  - name: Employee SKU
+
+
+# specify a list of host groups that should be created.
+# all parameters can be omitted except name.
+# each parameter that is not set is inherited from the parent host group.
+# the following parameters are available:
+# name (required)
+# architecture
+# compute_profile
+# compute_resource
+# config_groups
+# content_source
+# content_view
+# description
+# domain
+# environment
+# lifecycle_environment
+# locations
+# medium
+# openscap_proxy
+# operatingsystem
+# parameters (list, see activation key example below)
+# parent
+# ptable
+# puppet_ca_proxy
+# puppet_proxy
+# pxe_loader
+# realm
+# root_pass
+# subnet
+# subnet6
 
 host_groups:
 
 - name: DEV
-  title: DEV
+  architecture: x86_64
   lifecycle_environment: DEV
   content_source: sat6.example.com
+  compute_resource: Libvirt
   domain: example.com
-  parameters: []
+
+- name: TEST
+  architecture: x86_64
+  lifecycle_environment: TEST
+  content_source: sat6.example.com
+  compute_resource: Libvirt
+  domain: example.com
+
+- name: PROD
+  architecture: x86_64
+  lifecycle_environment: PROD
+  content_source: sat6.example.com
+  compute_resource: Libvirt
+  domain: example.com
 
 - parent: DEV
   name: RHEL7
-  title: DEV/RHEL7
   content_view: CV-RHEL7
-  architecture: x86_64
-  os: RedHat 7.6
+  operatingsystem: RedHat 7.7
+  ptable: Kickstart default
+  pxe_loader: PXELinux BIOS
   parameters:
   - name: kt_activation_keys
     value: AK-DEV-RHEL7
 
-- name: TEST
-  title: TEST
-  lifecycle_environment: TEST
-  content_source: sat6.example.com
-  domain: example.com
-  parameters: []
-
 - parent: TEST
   name: RHEL7
-  title: TEST/RHEL7
   content_view: CV-RHEL7
-  architecture: x86_64
-  os: RedHat 7.6
+  operatingsystem: RedHat 7.7
+  ptable: Kickstart default
+  pxe_loader: PXELinux BIOS
   parameters:
   - name: kt_activation_keys
     value: AK-TEST-RHEL7
 
-- name: PROD
-  title: PROD
-  lifecycle_environment: PROD
-  content_source: sat6.example.com
-  domain: example.com
-  parameters: []
-
 - parent: PROD
   name: RHEL7
-  title: PROD/RHEL7
   content_view: CV-RHEL7
-  architecture: x86_64
-  os: RedHat 7.6
+  operatingsystem: RedHat 7.7
   parameters:
   - name: kt_activation_keys
     value: AK-PROD-RHEL7
 
-# specify a list of smart class parameters that should be enabled to be overridden.
-# if puppet is not used, just specify and empty list
-smart_class_parameters_override:
+- parent: DEV
+  name: RHEL8
+  content_view: CV-RHEL8
+  operatingsystem: RedHat 8.0
+  ptable: Kickstart default
+  pxe_loader: PXELinux BIOS
+  parameters:
+  - name: kt_activation_keys
+    value: AK-DEV-RHEL8
 
-- class_name: tuned
-  parameter_names:
-  - manage
-  - profile
+- parent: TEST
+  name: RHEL8
+  content_view: CV-RHEL8
+  operatingsystem: RedHat 8.0
+  ptable: Kickstart default
+  pxe_loader: PXELinux BIOS
+  parameters:
+  - name: kt_activation_keys
+    value: AK-TEST-RHEL8
+
+- parent: PROD
+  name: RHEL8
+  content_view: CV-RHEL8
+  operatingsystem: RedHat 8.0
+  parameters:
+  - name: kt_activation_keys
+    value: AK-PROD-RHEL8
 
 # specify a list of compute resources that should be created
 compute_resources:
@@ -347,14 +378,62 @@ compute_resources:
 
 # specify a list of subnets that should be created
 subnets:
-- name: test-net
+- name: 192.168.122.0
   network_address: 192.168.122.0
   network_mask: 255.255.255.0
   gateway_address: 192.168.122.1
-  primary_dns: 192.168.122.10
+  primary_dns: 192.168.122.16
   secondary_dns: ""
   ipam: DHCP
-  ipam_from_address: 192.168.122.100
-  ipam_to_address: 192.168.122.199
+  ipam_from_address: 192.168.122.50
+  ipam_to_address: 192.168.122.100
   mtu: 1500
   boot_mode: Static
+
+# specify a list of settings that should be changed in the satellite
+# each setting need to be specified by name (label) and value
+settings:
+
+- name: use_shortname_for_vms
+  value: Yes
+
+# if the sat6-template-sync role is used, specify these variables
+template_sync_prefix: "Synced from git - "
+template_sync_repo: https://gitlab.example.com/sat6-templates.git
+
+# specify a list of custom user roles that should be created with
+# their corresponding permissions.
+# the permissions have to be divided into different resources,
+# e.g. content views, lifecycle environments and products as in
+# the Manage Content Views role below.
+user_roles:
+
+- name: Import Templates
+  permissions:
+  - import_templates
+
+- name: Manage Content Views
+  permissions:
+  - view_content_views,publish_content_views,promote_or_remove_content_views
+  - view_lifecycle_environments,promote_or_remove_content_views_to_environments
+  - view_products
+
+# specify a list of users that should be added to the satellite
+# password can either be specified with the password in clear text
+# or a random password can be generated as in the examples below
+users:
+
+- username: svc-template-importer
+  password: clear-text-password
+  mail: dev@null.no
+  auth_source: Internal
+  roles:
+  - Import Templates
+
+- username: svc-cv-manager
+  password: "{{ lookup('password', '/root/svc-cv-manager length=32') }}" # generated password
+  mail: dev@null.no
+  auth_source: Internal
+  roles:
+  - Manage Content Views
+

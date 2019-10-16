@@ -19,36 +19,16 @@
     tags: manifest
 
   - import_role:
-      name: sat6-domains
-    tags: domains
-
-  - import_role:
-      name: sat6-subnets
-    tags: subnets
-
-  - import_role:
-      name: sat6-settings
-    tags: settings
-
-  - import_role:
-      name: sat6-user-roles
-    tags: user-roles
-
-  - import_role:
-      name: sat6-users
-    tags: users
-
-  - import_role:
-      name: sat6-lifecycle-environments
-    tags: lifecycle-environments
-
-  - import_role:
       name: sat6-repositories
     tags: repositories
 
   - import_role:
       name: sat6-repositories-sync
     tags: repositories-sync
+
+  - import_role:
+      name: sat6-lifecycle-environments
+    tags: lifecycle-environments
 
   - import_role:
       name: sat6-content-views
@@ -63,13 +43,25 @@
     tags: activation-keys
 
   - import_role:
-      name: sat6-smart-class-parameters
-    tags: smart-class-parameters
-
-  - import_role:
       name: sat6-host-groups
     tags: host-groups
 
 #  - import_role:
+#      name: sat6-domains
+#    tags: domains
+#
+#  - import_role:
+#      name: sat6-subnets
+#    tags: subnets
+#
+#  - import_role:
+#      name: sat6-smart-class-parameters
+#    tags: smart-class-parameters
+#
+#  - import_role:
 #      name: sat6-template-sync
 #    tags: template-sync
+#
+#  - import_role:
+#      name: sat6-openscap
+#    tags: openscap

@@ -1,12 +1,26 @@
 ---
 
+# TODO: Can't get this to work. Create manifest as prerequisite for now.
+
+#- name: ensure manifest exist
+#  redhat_manifest:
+#    name: "{{ ansible_nodename }}"
+#    username: "{{ rhsm_username }}"
+#    password: "{{ rhsm_password }}"
+#    pool_id: xxx
+#    quantity: 10
+#    path: manifest.zip
+
 - name: copy manifest to remote host
   copy:
-     src: '{{ manifest }}'
-     dest: '/tmp/manifest.zip'
+     src: "{{ manifest }}"
+     dest: "/tmp/manifest.zip"
 
-- name: upload manifest
-  command: hammer subscription upload --organization '{{ organization }}' --file '/tmp/manifest.zip'
-
-#- name: refresh manifest
-#  command: hammer subscription refresh-manifest --organization '{{ organization }}' 
+- name: ensure manifest is uploaded
+  katello_manifest:
+    username: "{{ username }}"
+    password: "{{ password }}"
+    server_url: "{{ server_url }}"
+    organization: "{{ organization }}"
+    state: present
+    manifest_path: "/tmp/manifest.zip"

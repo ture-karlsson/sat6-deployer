@@ -1,16 +1,12 @@
 ---
 
-- name: get current locations
-  shell: hammer --csv location list | tail -n +2 | awk -F ',' '{print $2}'
-  register: current_locations
-  changed_when: false
-
-- name: ensure location "{{ item }}" exists
-  command: hammer location create --name "{{ item }}"
-  when: '"{{ item }}" not in current_locations.stdout'
-  with_items: "{{ locations }}"
-
-- name: ensure all locations are assigned to organization
-  command: hammer location add-organization --organization "{{ organization }}" --name "{{ item }}"
-  with_items: "{{ locations }}"
-
+- name: ensure locations exists
+  foreman_location:
+    username: "{{ username }}"
+    password: "{{ password }}"
+    server_url: "{{ server_url }}"
+    name: "{{ item }}"
+    state: present
+    organizations:
+      - "{{ organization }}"
+  loop: "{{ locations }}"

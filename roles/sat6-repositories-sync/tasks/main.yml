@@ -1,46 +1,81 @@
 ---
 
-- name: ensure no sync tasks are already running 
-  action:
-    shell hammer --csv task list --organization '{{ organization }}' --search 'label = Actions::Katello::Repository::Sync and state = running'
-  register: running_sync_tasks
-  until: running_sync_tasks.stdout.find("running") == -1
-  delay: 60
-  retries: 600
-  changed_when: false
-
-- name: get current repository IDs
-  shell: hammer --csv repository list --organization '{{ organization }}' | tail -n +2 | awk -F ',' '{print $1}'
-  register: current_repository_ids
-  changed_when: false
-
-- name: sync all repositories
-  command: hammer repository synchronize --organization '{{ organization }}' --async --id {{ item }}
-  with_items: "{{ current_repository_ids.stdout_lines }}"
+# TODO: foreman_search_facts does not work with tasks
+#
+#- name: get all running sync tasks
+#  foreman_search_facts:
+#    username: "{{ username }}"
+#    password: "{{ password }}"
+#    server_url: "{{ server_url }}"
+#    resource: sync_tasks 
+#    search: label = Actions::Katello::Repository::Sync and state = running
+#  register: sync_tasks
+#
+# until issue above is fixed, use hammer to check when syncs are complete
 
 - name: wait for sync tasks to complete
-  action:
-    shell hammer --csv task list --organization '{{ organization }}' --search 'label = Actions::Katello::Repository::Sync and state = running'
+  action: >
+    shell hammer
+    --csv task list
+    --search 'label = Actions::Katello::Repository::Sync and state = running'
   register: running_sync_tasks
   until: running_sync_tasks.stdout.find("running") == -1
   delay: 60
   retries: 600
   changed_when: false
 
-- name: get current sync plans
-  shell: hammer --csv sync-plan list --organization '{{ organization }}' | tail -n +2 | awk -F ',' '{print $2}'
-  register: current_sync_plans
+
+- name: get all repositories
+  foreman_search_facts:
+    username: "{{ username }}"
+    password: "{{ password }}"
+    server_url: "{{ server_url }}"
+    resource: repositories
+  register: repositories
+
+- name: sync of all repositories
+  katello_sync:
+    username: "{{ username }}"
+    password: "{{ password }}"
+    server_url: "{{ server_url }}"
+    organization: "{{ organization }}"
+    product: "{{ item.product.name }}"
+    repository:  "{{ item.name }}"
+    synchronous: no
+  loop: "{{ repositories.resources }}"
+  when: item.url # repositories without url cannot be synced 
+
+# TODO: foreman_search_facts does not work with products
+#
+#- name: get all products
+#  foreman_search_facts:
+#    username: "{{ username }}"
+#    password: "{{ password }}"
+#    server_url: "{{ server_url }}"
+#    resource: products
+#  register: products
+#
+#  until issue above is fixed, use hammer to get all product names
+
+- name: get all products
+  shell: >
+    hammer 
+    --csv product list 
+    --organization '{{ organization }}'
+    --enabled true 
+    | tail -n +2 
+    | awk -F ',' '{print $2}'
+  register: products
   changed_when: false
 
-- name: ensure sync plan "{{ sync_plan_name }}" exists
-  shell: hammer sync-plan create --organization '{{ organization }}' --enabled yes --name "{{ sync_plan_name }}" --interval "{{ sync_plan_interval }}"  --sync-date "$(date +"%Y-%m-%d" -d "next day") 00:00:00"
-  when: "sync_plan_name not in current_sync_plans.stdout"
-
-- name: get current products
-  shell: hammer --csv product list --organization '{{ organization }}' --enabled true | tail -n +2 | awk -F ',' '{print $2}'
-  register: current_product_names
-  changed_when: false
-
-- name: ensure all products are in "{{ sync_plan_name }}" sync plan
-  command: hammer product update --organization '{{ organization }}' --name "{{ item }}" --sync-plan "{{ sync_plan_name }}" 
-  with_items: "{{ current_product_names.stdout_lines }}"
+- name: ensure sync plan exist
+  katello_sync_plan:
+    username: "{{ username }}"
+    password: "{{ password }}"
+    server_url: "{{ server_url }}"
+    organization: "{{ organization }}"
+    enabled: yes
+    interval: "{{ sync_plan_interval }}" 
+    name: "{{ sync_plan_name }}"
+    sync_date: "{{ lookup('pipe', 'date +\"%Y-%m-%d\" -d \"next day\"') }}"
+    products: "{{ products.stdout_lines | list }}" 

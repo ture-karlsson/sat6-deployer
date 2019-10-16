@@ -1,45 +1,11 @@
 ---
 
-- name: get current content views
-  shell: hammer --csv content-view list --organization '{{ organization }}' --nondefault true | tail -n +2 | awk -F ',' '{print $2}'
-  register: current_content_views
-  changed_when: false
-
-- name: wait for publish tasks to complete
-  action:
-    shell hammer --csv task list --organization '{{ organization }}' --search 'label = Actions::Katello::ContentView::Publish and state = running'
-  register: running_sync_tasks
-  until: running_sync_tasks.stdout.find("running") == -1
-  delay: 60
-  retries: 60
-  changed_when: false
-
-- name: publish all content views
-  command: hammer content-view publish --organization '{{ organization }}' --name '{{ item }}'
-  with_items: "{{ current_content_views.stdout_lines }}"
-
-- name: wait for publish tasks to complete
-  action:
-    shell hammer --csv task list --organization '{{ organization }}' --search 'label = Actions::Katello::ContentView::Publish and state = running'
-  register: running_sync_tasks
-  until: running_sync_tasks.stdout.find("running") == -1
-  delay: 60
-  retries: 60
-  changed_when: false
-
-- name: get current lifecycle environments
-  shell: hammer --csv lifecycle-environment list --organization '{{ organization }}' --library false | tail -n +2 | awk -F ',' '{print $2}'
-  register: current_lifecycle_environments
-  changed_when: false
-
-- name: promote latest version of each content view to all lifecycle environments
-  command: >
-    hammer content-view version promote
-    --organization '{{ organization }}'
-    --from-lifecycle-environment Library
-    --to-lifecycle-environment '{{ item[0] }}'
-    --content-view '{{ item[1] }}'
-    --force
-  with_nested:
-  - "{{ current_lifecycle_environments.stdout_lines }}"
-  - "{{ current_content_views.stdout_lines }}"
+- name: publish a new version of each content view and promote it to all lifecycle environments
+  katello_content_view_version:
+    username: "{{ username }}"
+    password: "{{ password }}"
+    server_url: "{{ server_url }}"
+    organization: "{{ organization }}"
+    content_view: "{{ item.name }}"
+    lifecycle_environments: "{{ lifecycle_environments | map(attribute='name') | list }}"
+  loop: "{{ content_views }}"

@@ -1,11 +1,9 @@
 ---
 
-- name: get current organizations
-  shell: hammer --csv organization list | tail -n +2 | awk -F ',' '{print $2}'
-  register: current_organizations
-  changed_when: false
-
-- name: ensure organizations exists
-  command: hammer organization create --name "{{ organization }}"
-  when: 'organization not in current_organizations.stdout'
-
+- name: ensure organization {{ organization }} exists
+  foreman_organization:
+    username: "{{ username }}"
+    password: "{{ password }}"
+    server_url: "{{ server_url }}"
+    name: "{{ organization }}"
+    state: present

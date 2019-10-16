@@ -1,22 +1,28 @@
 # sat6-deployer
 This repository contains roles and playbooks to automatically configure a Satellite 6 server based on variables provided by the user.
 
+This is tested with Red Hat Satellite 6.6.0 Beta.
+
 ## Prerequisites
-Install a minimal RHEL 7 according to the Satellite 6 documentation: https://access.redhat.com/documentation/en-us/red_hat_satellite/6.4/html/installing_satellite_server_from_a_connected_network/
+Install a minimal RHEL 7 according to the Satellite 6 documentation: https://access.redhat.com/documentation/en-us/red_hat_satellite/6.6-beta/html/installing_satellite_server_from_a_connected_network/preparing_your_environment_for_installation 
 
 ### Register with subscription-manager
 I have intentionally left the registration steps manual because this may differ a lot between different environments. The following instructions can be seen as an example, but may not be exactly the same for you.
 
 Register with subscription-manager:
 ```bash
-# subscription-manager register
+subscription-manager register
 ```
 
 Find an available Satellite subscription you want to use and attach it with its pool ID:
 ```bash
-# subscription-manager list --available
-# subscription-manager attach --pool <pool ID of your Satellite subscription>
-# subscription-manager repos \
+subscription-manager list --available
+subscription-manager attach --pool <pool ID of your Satellite subscription>
+```
+
+Ensure that you have access to the correct repositories:
+```bash
+subscription-manager repos \
 --disable="*"
 --enable=rhel-7-server-rpms \
 --enable=rhel-server-rhscl-7-rpms \
@@ -24,13 +30,17 @@ Find an available Satellite subscription you want to use and attach it with its 
 --enable=rhel-7-server-satellite-maintenance-6-rpms \
 --enable=rhel-7-server-ansible-2.6-rpms
 ```
-https://access.redhat.com/documentation/en-us/red_hat_satellite/6.4/html/installing_satellite_server_from_a_connected_network/installing_satellite_server#registering_subscription_management_satellite
 
 ### Clone this repository
 ```bash
-# yum -y install git
-# git clone https://github.com/ture-karlsson/sat6-deployer.git
-# cd sat6-deployer/
+yum -y install git
+git clone https://github.com/ture-karlsson/sat6-deployer.git
+cd sat6-deployer/
+```
+
+### Clone the foreman-ansible-modules repository
+```bash
+git clone https://github.com/theforeman/foreman-ansible-modules.git
 ```
 
 ## Usage
@@ -59,7 +69,7 @@ I have added a simple playbook called sat6-install.yml that can install the Sate
 
 However, if you want to use sat6-install.yml, it can be run with the following command.
 ```bash
-# ansible-playbook -i hosts sat6-install.yaml
+ansible-playbook -i hosts sat6-install.yaml
 ```
 
 It may be wise to reboot your Satellite at this stage if yum updated packages that require reboot.
@@ -68,19 +78,29 @@ It may be wise to reboot your Satellite at this stage if yum updated packages th
 If the installation was successful, it is time to put some content in your Satellite. This is what takes the most time, but this is also where this automation saves you a lot of time. Again, make sure vars/sat-vars.yml looks as you expect it to. All configuration are based on the repositories, content views and host groups etc that are defined in there. The playbook can be run in different phases to configure only one or a couple types of objects by using the defined tags, e.g.
 
 ```bash
-# ansible-playbook -i hosts sat6-configure.yml --tags settings
-# ansible-playbook -i hosts sat6-configure.yml --tags repositories,content-views,activation-keys
-# ansible-playbook -i hosts sat6-configure.yml --tags host-groups
+ansible-playbook -i hosts sat6-configure.yml --tags manifest
+ansible-playbook -i hosts sat6-configure.yml --tags repositories,content-views,activation-keys
 ```
 or everything at once:
 ```bash
-# ansible-playbook -i hosts sat6-configure.yml
+ansible-playbook -i hosts sat6-configure.yml
 ```
 
 Have a look around in the GUI and see if all objects were created according to your expectations.
 
-## Issues?
-Please report issues and/or questions. Pull requests are very welcome.
+## TODO
+Some roles does not yet use foreman-ansible-modules and needs to be fixed:
+-  sat6-domains
+-  sat6-subnets
+-  sat6-compute-resources
+-  sat6-smart-class-parameters
+-  sat6-template-sync
+-  sat6-settings
+-  sat6-user-roles
+-  sat6-users
 
-## Future improvements
-This is very dependant on the command module executing hammer with is far from optimal. My plan is to start using https://github.com/theforeman/foreman-ansible-modules instead. Again, PRs are welcome. 
+## Issues
+Please report issues and/or questions.
+
+## Pull requests
+Even better that reporting issues, send a pull request.
