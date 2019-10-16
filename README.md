@@ -76,21 +76,29 @@ I have added a simple playbook called sat6-install.yml that can install the Sate
 
 However, if you want to use sat6-install.yml, it can be run with the following command.
 ```bash
-ansible-playbook -i hosts sat6-install.yaml
+ansible-playbook sat6-install.yaml
+```
+Some of the tasks, e.g. the yum tasks and the satellite-installer task take long time. If you want to track their progress, you can tail the respective logs:
+```bash
+tail -f /var/log/yum.log
+```
+and for the installer:
+```bash
+tail -f /var/log/foreman-installer/satellite.log
 ```
 
-It may be wise to reboot your Satellite at this stage if yum updated packages that require reboot.
+When the installer is done, it may be wise to reboot your Satellite if yum updated packages that require reboot.
 
 ### Run sat6-configure.yaml playbook
 If the installation was successful, it is time to put some content in your Satellite. This is what takes the most time, but this is also where this automation saves you a lot of time. Again, make sure vars/sat-vars.yml looks as you expect it to. All configuration are based on the repositories, content views and host groups etc that are defined in there. The playbook can be run in different phases to configure only one or a couple types of objects by using the defined tags, e.g.
 
 ```bash
-ansible-playbook -i hosts sat6-configure.yml --tags manifest
-ansible-playbook -i hosts sat6-configure.yml --tags repositories,content-views,activation-keys
+ansible-playbook sat6-configure.yml --tags manifest
+ansible-playbook sat6-configure.yml --tags repositories,content-views,activation-keys
 ```
 or everything at once:
 ```bash
-ansible-playbook -i hosts sat6-configure.yml
+ansible-playbook sat6-configure.yml
 ```
 
 Have a look around in the GUI and see if all objects were created according to your expectations.
