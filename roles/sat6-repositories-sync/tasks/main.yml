@@ -45,6 +45,17 @@
   loop: "{{ repositories.resources }}"
   when: item.url # repositories without url cannot be synced 
 
+- name: wait for sync tasks to complete
+  action: >
+    shell hammer
+    --csv task list
+    --search 'label = Actions::Katello::Repository::Sync and state = running'
+  register: running_sync_tasks
+  until: running_sync_tasks.stdout.find("running") == -1
+  delay: 60
+  retries: 600
+  changed_when: false
+
 # TODO: foreman_search_facts does not work with products
 #
 #- name: get all products
