@@ -377,19 +377,29 @@ compute_resources:
   username: username
   password: password
 
-# specify a list of subnets that should be created
+# specify a list of subnets that should be created.
+# name, network and mask are required, rest of the fields can be omitted.
 subnets:
-- name: 192.168.122.0
-  network_address: 192.168.122.0
-  network_mask: 255.255.255.0
-  gateway_address: 192.168.122.1
-  primary_dns: 192.168.122.16
-  secondary_dns: ""
-  ipam: DHCP
-  ipam_from_address: 192.168.122.50
-  ipam_to_address: 192.168.122.100
+
+- name: default 
+  network: 192.168.122.0
+  mask: 255.255.255.0
+  gateway: 192.168.122.1
   mtu: 1500
-  boot_mode: Static
+  network_type: IPv4
+  vlanid: 1
+  boot_mode: DHCP
+  ipam: DHCP
+  from_ip: 192.168.122.50
+  to_ip: 192.168.122.100
+  dns_primary: 192.168.122.10
+  dns_secondary: 4.4.4.4
+  dhcp_proxy: "{{ ansible_nodename }}"
+  discovery_proxy: "{{ ansible_nodename }}"
+  dns_proxy: "{{ ansible_nodename }}"
+  remote_execution_proxies: "{{ ansible_nodename }}"
+  tftp_proxy: "{{ ansible_nodename }}"
+
 
 # specify a list of settings that should be changed in the satellite
 # each setting need to be specified by name (label) and value
