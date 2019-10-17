@@ -7,7 +7,7 @@
     server_url: "{{ server_url }}"
     organization: "{{ organization }}"
     name: "{{ item.name }}"
-    architecture: "{{ item.architecture | default(omit) }}" 
+    architecture: "{{ item.architecture | default(omit) }}"
     compute_profile: "{{ item.compute_profile | default(omit) }}"
     compute_resource: "{{ item.compute_resource | default(omit) }}"
     config_groups: "{{ item.config_groups | default(omit) }}"

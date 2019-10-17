@@ -46,13 +46,13 @@
       name: sat6-host-groups
     tags: host-groups
 
-#  - import_role:
-#      name: sat6-domains
-#    tags: domains
-#
-#  - import_role:
-#      name: sat6-subnets
-#    tags: subnets
+  - import_role:
+      name: sat6-domains
+    tags: domains
+
+  - import_role:
+      name: sat6-subnets
+    tags: subnets
 #
 #  - import_role:
 #      name: sat6-smart-class-parameters

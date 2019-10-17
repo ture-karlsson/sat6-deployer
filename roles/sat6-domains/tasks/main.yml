@@ -1,20 +1,13 @@
 ---
 
-- name: get current domains
-  shell: hammer --csv domain list | tail -n +2 | awk -F ',' '{print $2}'
-  register: current_domains
-  changed_when: false
-
-- name: ensure all domains are present
-  command: >
-    hammer domain create
-    --name '{{ item }}'
-    --organization '{{ organization }}'
-    --locations '{{ locations|join(',') }}'
-  when: 'item not in current_domains.stdout'
-  with_items: '{{ domains }}'
-
-- name: ensure all domains are assigned to organization
-  command: hammer domain update --name '{{ item }}' --organizations "{{ organization }}"
-  with_items: "{{ domains }}"
+- name: ensure domains exist
+  foreman_domain:
+    username: "{{ username }}"
+    password: "{{ password }}"
+    server_url: "{{ server_url }}"
+    organizations:
+    - "{{ organization }}"
+    locations: "{{ locations }}"
+    name: "{{ item }}"
+  loop: "{{ domains }}"
 

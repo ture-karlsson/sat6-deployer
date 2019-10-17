@@ -114,14 +114,15 @@ Have a look around in the GUI and see if all objects were created according to y
 
 ## TODO
 Some roles does not yet use foreman-ansible-modules and needs to be fixed:
--  sat6-domains
--  sat6-subnets
--  sat6-compute-resources
--  sat6-smart-class-parameters
--  sat6-template-sync
--  sat6-settings
--  sat6-user-roles
--  sat6-users
+- sat6-compute-resources
+- sat6-smart-class-parameters
+- sat6-template-sync
+- sat6-settings
+- sat6-user-roles
+- sat6-users
+
+Roles are missing for the following objects (and possibly more):
+- sat6-compute-profile
 
 ## Issues
 Please report issues and/or questions.

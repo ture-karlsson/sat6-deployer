@@ -12,7 +12,7 @@
     repositories:
     - basearch: "{{ item.1.basearch | default(omit) }}"
       releasever: "{{ item.1.releasever | default(omit) }}"
-  with_subelements: 
+  with_subelements:
   - "{{ redhat_products }}"
   - repositories
 
@@ -51,7 +51,7 @@
 
 # TODO: ensure global proxy setting is honored
 
-- name: ensure custom repositories exist 
+- name: ensure custom repositories exist
   katello_repository:
     username: "{{ username }}"
     password: "{{ password }}"

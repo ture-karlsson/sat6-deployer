@@ -43,7 +43,7 @@
     repository:  "{{ item.name }}"
     synchronous: no
   loop: "{{ repositories.resources }}"
-  when: item.url # repositories without url cannot be synced 
+  when: item.url # repositories without url cannot be synced
 
 - name: wait for sync tasks to complete
   action: >
@@ -70,11 +70,11 @@
 
 - name: get all products
   shell: >
-    hammer 
-    --csv product list 
+    hammer
+    --csv product list
     --organization '{{ organization }}'
-    --enabled true 
-    | tail -n +2 
+    --enabled true
+    | tail -n +2
     | awk -F ',' '{print $2}'
   register: products
   changed_when: false
@@ -86,7 +86,7 @@
     server_url: "{{ server_url }}"
     organization: "{{ organization }}"
     enabled: yes
-    interval: "{{ sync_plan_interval }}" 
+    interval: "{{ sync_plan_interval }}"
     name: "{{ sync_plan_name }}"
     sync_date: "{{ lookup('pipe', 'date +\"%Y-%m-%d\" -d \"next day\"') }}"
-    products: "{{ products.stdout_lines | list }}" 
+    products: "{{ products.stdout_lines | list }}"
