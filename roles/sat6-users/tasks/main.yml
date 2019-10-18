@@ -15,3 +15,4 @@
   failed_when: user_create_output.rc != 0 and user_create_output.rc != 65
   changed_when: user_create_output.rc == 0
   no_log: true
+  delegate_to: "{{ 'localhost' if hammer_local else omit }}"

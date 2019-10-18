@@ -9,5 +9,7 @@
     - "{{ organization }}"
     locations: "{{ locations }}"
     name: "{{ item }}"
+    validate_certs: "{{ validate_certs }}"
   loop: "{{ domains }}"
+  delegate_to: "{{ 'localhost' if fam_local else omit }}"
 

@@ -9,3 +9,4 @@
   with_subelements:
   - "{{ smart_class_parameters_override }}"
   - parameter_names
+  delegate_to: "{{ 'localhost' if hammer_local else omit }}"

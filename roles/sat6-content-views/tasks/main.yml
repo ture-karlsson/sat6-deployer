@@ -8,7 +8,9 @@
     organization: "{{ organization }}"
     name: "{{ item.name }}"
     repositories: "{{ item.repositories }}"
+    validate_certs: "{{ validate_certs }}"
   loop: "{{ content_views }}"
+  delegate_to: "{{ 'localhost' if fam_local else omit }}"
 
 # TODO: the task below does not work properly. no filters created at this point 
 

@@ -10,5 +10,7 @@
     label: "{{ item.name }}"
     prior: "{{ item.prior }}"
     state: present
+    validate_certs: "{{ validate_certs }}"
   loop: "{{ lifecycle_environments }}"
+  delegate_to: "{{ 'localhost' if fam_local else omit }}"
 

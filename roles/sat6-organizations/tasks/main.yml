@@ -6,4 +6,6 @@
     password: "{{ password }}"
     server_url: "{{ server_url }}"
     name: "{{ organization }}"
+    validate_certs: "{{ validate_certs }}"
     state: present
+  delegate_to: "{{ 'localhost' if fam_local else omit }}"

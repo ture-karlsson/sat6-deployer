@@ -27,5 +27,7 @@
     dns_proxy: "{{ item.dns_proxy | default(omit) }}"
     remote_execution_proxies: "{{ item.remote_execution_proxies | default(omit) }}"
     tftp_proxy: "{{ item.tftp_proxy | default(omit) }}"
+    validate_certs: "{{ validate_certs }}"
   loop: "{{ subnets }}"
+  delegate_to: "{{ 'localhost' if fam_local else omit }}"
 

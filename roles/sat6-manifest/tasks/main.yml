@@ -15,6 +15,7 @@
   copy:
      src: "{{ manifest }}"
      dest: "/tmp/manifest.zip"
+  delegate_to: "{{ 'localhost' if fam_local else omit }}"
 
 - name: ensure manifest is uploaded
   katello_manifest:
@@ -24,3 +25,5 @@
     organization: "{{ organization }}"
     state: present
     manifest_path: "/tmp/manifest.zip"
+    validate_certs: "{{ validate_certs }}"
+  delegate_to: "{{ 'localhost' if fam_local else omit }}"
