@@ -8,4 +8,6 @@
     organization: "{{ organization }}"
     content_view: "{{ item.name }}"
     lifecycle_environments: "{{ lifecycle_environments | map(attribute='name') | list }}"
+    validate_certs: "{{ validate_certs }}"
   loop: "{{ content_views }}"
+  delegate_to: "{{ 'localhost' if fam_local else omit }}"

@@ -23,6 +23,7 @@
   delay: 60
   retries: 600
   changed_when: false
+  delegate_to: "{{ 'localhost' if hammer_local else omit }}"
 
 
 - name: get all repositories
@@ -31,7 +32,9 @@
     password: "{{ password }}"
     server_url: "{{ server_url }}"
     resource: repositories
+    validate_certs: "{{ validate_certs }}"
   register: repositories
+  delegate_to: "{{ 'localhost' if fam_local else omit }}"
 
 - name: sync of all repositories
   katello_sync:
@@ -42,8 +45,10 @@
     product: "{{ item.product.name }}"
     repository:  "{{ item.name }}"
     synchronous: no
+    validate_certs: "{{ validate_certs }}"
   loop: "{{ repositories.resources }}"
   when: item.url # repositories without url cannot be synced
+  delegate_to: "{{ 'localhost' if fam_local else omit }}"
 
 - name: wait for sync tasks to complete
   action: >
@@ -55,6 +60,7 @@
   delay: 60
   retries: 600
   changed_when: false
+  delegate_to: "{{ 'localhost' if hammer_local else omit }}"
 
 # TODO: foreman_search_facts does not work with products
 #
@@ -78,6 +84,7 @@
     | awk -F ',' '{print $2}'
   register: products
   changed_when: false
+  delegate_to: "{{ 'localhost' if hammer_local else omit }}"
 
 - name: ensure sync plan exist
   katello_sync_plan:
@@ -90,3 +97,5 @@
     name: "{{ sync_plan_name }}"
     sync_date: "{{ lookup('pipe', 'date +\"%Y-%m-%d\" -d \"next day\"') }}"
     products: "{{ products.stdout_lines | list }}"
+    validate_certs: "{{ validate_certs }}"
+  delegate_to: "{{ 'localhost' if fam_local else omit }}"

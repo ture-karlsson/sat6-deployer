@@ -9,12 +9,14 @@
     product: "{{ item.0.name }}"
     name: "{{ item.1.name }}"
     state: enabled
+    validate_certs: "{{ validate_certs }}"
     repositories:
     - basearch: "{{ item.1.basearch | default(omit) }}"
       releasever: "{{ item.1.releasever | default(omit) }}"
   with_subelements:
   - "{{ redhat_products }}"
   - repositories
+  delegate_to: "{{ 'localhost' if fam_local else omit }}"
 
 - name: ensure custom products exist
   katello_product:
@@ -23,7 +25,9 @@
     server_url: "{{ server_url }}"
     organization: "{{ organization }}"
     name: "{{ item.name }}"
+    validate_certs: "{{ validate_certs }}"
   loop: "{{ custom_products }}"
+  delegate_to: "{{ 'localhost' if fam_local else omit }}"
 
 - name: ensure directory for GPG keys exist
   file:
@@ -47,7 +51,9 @@
     name: "{{ item.path }}"
     content_type: gpg_key
     content: "{{ lookup('file', '/tmp/gpg-keys/{{ item.path }}') }}"
+    validate_certs: "{{ validate_certs }}"
   with_filetree: /tmp/gpg-keys/
+  delegate_to: "{{ 'localhost' if fam_local else omit }}"
 
 # TODO: ensure global proxy setting is honored
 
@@ -63,7 +69,9 @@
     url: "{{ item.1.url }}"
     download_policy: "{{ download_policy }}"
     gpg_key: "{{ item.1.gpg_key.split('/')[-1] | default(omit) }}"
+    validate_certs: "{{ validate_certs }}"
   with_subelements:
   - "{{ custom_products }}"
   - repositories
+  delegate_to: "{{ 'localhost' if fam_local else omit }}"
 

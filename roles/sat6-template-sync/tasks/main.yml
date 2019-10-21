@@ -6,3 +6,4 @@
     --organization '{{ organization }}' 
     --prefix '{{ template_sync_prefix }}' 
     --repo '{{ template_sync_repo }}'
+  delegate_to: "{{ 'localhost' if hammer_local else omit }}"

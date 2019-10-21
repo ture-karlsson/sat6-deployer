@@ -9,4 +9,6 @@
     state: present
     organizations:
       - "{{ organization }}"
+    validate_certs: "{{ validate_certs }}"
   loop: "{{ locations }}"
+  delegate_to: "{{ 'localhost' if fam_local else omit }}"

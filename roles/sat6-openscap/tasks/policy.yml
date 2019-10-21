@@ -1,6 +1,7 @@
 - name: get scap content id
   shell: "hammer --csv scap-content list | grep '{{ policy.scap_content_name }}' | cut -d ',' -f 1"
   register: scap_content_id 
+  delegate_to: "{{ 'localhost' if hammer_local else omit }}"
   
 - debug:
     msg: " {{  scap_content_id }}"
@@ -10,6 +11,7 @@
 - name: get scap content profile id.. id 
   shell: "hammer scap-content info --id {{ scap_content_id }} | grep '{{ policy.scap_content_profile_id }}' -B 1 | grep 'Id' | awk '{ print $2 }'"
   register: profile_id
+  delegate_to: "{{ 'localhost' if hammer_local else omit }}"
 
 - debug:
     msg: "{{ profile_id }}"
@@ -21,6 +23,7 @@
   shell:  'hammer --csv location list | cut -d "," -f 2 | tail -n +2'
   register: avail_locations
   when: "'all' in policy.locations"
+  delegate_to: "{{ 'localhost' if hammer_local else omit }}"
 
 - set_fact:
     policy_locations: ""
@@ -50,6 +53,7 @@
     --locations '{{ policy_locations }}'
   register: policy_creation
   failed_when: false
+  delegate_to: "{{ 'localhost' if hammer_local else omit }}"
   
 - fail: 
     msg: "Something went wrong when creating the OpenSCAP policy: stdout: {{ policy_creation.stdout }} stderr: {{ policy_creation.stderr }}"
@@ -67,3 +71,4 @@
     --locations '{{ policy_locations }}'
   register: policy_creation
   when: "'Name has already been taken' in policy_creation.stderr and policy_creation.rc != 0"
+  delegate_to: "{{ 'localhost' if hammer_local else omit }}"

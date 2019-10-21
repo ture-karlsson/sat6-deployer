@@ -1,5 +1,17 @@
 ---
 
+# Set to False if using self-signed certs on satellite
+validate_certs: True
+
+# Set to True if you want to execute hammer commands on the Ansible host
+# rather than on the satellite
+hammer_local: False
+
+# Set to False if you want to execute foreman-ansible-modules on the 
+# satellite rather than the Ansible host 
+fam_local: True
+
+
 # specify what ports that should be open in the local firewall
 open_ports:
 - 53/tcp

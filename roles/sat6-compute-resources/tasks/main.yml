@@ -10,3 +10,4 @@
     --user '{{ item.username }}' 
     --password '{{ item.password }}'
   with_items: "{{ compute_resources }}"
+  delegate_to: "{{ 'localhost' if hammer_local else omit }}"

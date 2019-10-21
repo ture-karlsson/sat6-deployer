@@ -31,4 +31,6 @@
     root_pass: "{{ item.root_pass | default(omit) }}"
     subnet: "{{ item.subnet | default(omit) }}"
     subnet6: "{{ item.subnet6 | default(omit) }}"
+    validate_certs: "{{ validate_certs }}"
   loop: "{{ host_groups }}"
+  delegate_to: "{{ 'localhost' if fam_local else omit }}"

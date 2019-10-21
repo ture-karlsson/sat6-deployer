@@ -6,6 +6,7 @@
   failed_when: create_role_output.rc != 0 and create_role_output.rc != 65
   changed_when: create_role_output.rc == 0
   with_items: "{{ user_roles }}"
+  delegate_to: "{{ 'localhost' if hammer_local else omit }}"
 
 - name: add filters to roles
   command: >
@@ -15,4 +16,5 @@
   with_subelements:
   - "{{ user_roles }}"
   - permissions
+  delegate_to: "{{ 'localhost' if hammer_local else omit }}"
 

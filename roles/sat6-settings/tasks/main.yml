@@ -3,3 +3,4 @@
 - name: update settings
   command: hammer settings set --name "{{ item.name }}"  --value "{{ item.value }}"
   with_items: "{{ settings }}"
+  delegate_to: "{{ 'localhost' if hammer_local else omit }}"
