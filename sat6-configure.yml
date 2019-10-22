@@ -43,6 +43,10 @@
     tags: activation-keys
 
   - import_role:
+      name: sat6-compute-resources
+    tags: compute-resources
+
+  - import_role:
       name: sat6-host-groups
     tags: host-groups
 
