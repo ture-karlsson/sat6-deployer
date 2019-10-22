@@ -53,7 +53,19 @@
   - import_role:
       name: sat6-subnets
     tags: subnets
-#
+
+  - import_role:
+      name: sat6-settings
+    tags: settings
+
+  - import_role:
+      name: sat6-user-roles
+    tags: user-roles
+
+  - import_role:
+      name: sat6-users
+    tags: users
+
 #  - import_role:
 #      name: sat6-smart-class-parameters
 #    tags: smart-class-parameters

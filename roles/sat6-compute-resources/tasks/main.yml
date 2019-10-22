@@ -1,13 +1,16 @@
 ---
 
-- name: ensure compute resources are present
-  command: >
-    hammer compute-resource create 
-    --name '{{ item.name }}'
-    --provider '{{ item.provider }}' 
-    --url '{{ item.url }}' 
-    --datacenter '{{ item.datacenter }}' 
-    --user '{{ item.username }}' 
-    --password '{{ item.password }}'
-  with_items: "{{ compute_resources }}"
-  delegate_to: "{{ 'localhost' if hammer_local else omit }}"
+- name: ensure compute resources exist
+  foreman_compute_resource:
+    username: "{{ username }}"
+    password: "{{ password }}"
+    server_url: "{{ server_url }}"
+    validate_certs: "{{ validate_certs }}"
+    organizations:
+    - "{{ organization }}"
+    locations: "{{ locations }}"
+    name: "{{ item.name }}"
+    provider: "{{ item.provider }}"
+    provider_params: "{{ item.provider_params }}"
+  loop: "{{ compute_resources }}"
+  delegate_to: "{{ 'localhost' if fam_local else omit }}"

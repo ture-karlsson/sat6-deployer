@@ -1,18 +1,18 @@
 ---
 
 - name: ensure users exist
-  command: >
-    hammer user create 
-    --organizations '{{ organization }}'
-    --locations '{{ locations|join(',') }}'
-    --auth-source '{{ item.auth_source }}'
-    --login '{{ item.username }}'
-    --password '{{ item.password }}'
-    --mail '{{ item.mail }}'
-    --roles '{{ item.roles|join(',') }}'
-  with_items: '{{ users }}'
-  register: user_create_output
-  failed_when: user_create_output.rc != 0 and user_create_output.rc != 65
-  changed_when: user_create_output.rc == 0
-  no_log: true
-  delegate_to: "{{ 'localhost' if hammer_local else omit }}"
+  foreman_user:
+    username: "{{ username }}"
+    password: "{{ password }}"
+    server_url: "{{ server_url }}"
+    validate_certs: "{{ validate_certs }}"
+    login: "{{ item.login }}"
+    user_password: "{{ item.password }}"
+    admin: "{{ item.admin | default(omit) }}"
+    firstname: "{{ item.firstname | default(omit) }}"
+    lastname: "{{ item.lastname | default(omit) }}"
+    mail: "{{ item.mail | default(omit) }}"
+    auth_source: "{{ auth_source }}"
+    roles: "{{ item.roles }}"
+  loop: "{{ users }}"
+  delegate_to: "{{ 'localhost' if fam_local else omit }}"
