@@ -300,7 +300,7 @@ compute_resources:
   provider_params:
     url: vcenter.example.com
     datacenter: DC1
-    username: username
+    user: username
     password: password
 
 # when using libvirt as a compute resource, there are some more steps that are needed, see:
