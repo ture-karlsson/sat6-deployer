@@ -296,7 +296,7 @@ subnets:
 # specify a list of compute resources that should be created
 compute_resources:
 - name: VMware
-  provider: Vmware
+  provider: vmware
   provider_params:
     url: vcenter.example.com
     datacenter: DC1
