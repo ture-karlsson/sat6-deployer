@@ -56,9 +56,8 @@ yum -y install python2-pip
 pip install apypie
 yum -y remove epel-release
 ```
-<aside class="warning">
-Do not install apypie through pip on Satlelite 6.6 GA since it has dependencies that will make the installation of Satellite fail. Alternative installation method will be provided soon.
-</aside>
+Update: Do not install apypie through pip on Satlelite 6.6 GA since it has dependencies that will make the installation of Satellite fail. Alternative installation method will be provided soon.
+
 
 ## Usage
 
