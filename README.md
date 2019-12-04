@@ -1,10 +1,10 @@
 # sat6-deployer
-This repository contains roles and playbooks to automatically configure a Satellite 6 server based on variables provided by the user.
+This repository contains roles and playbooks to automatically install and configure a Satellite 6 server based on variables provided by the user.
 
 This is tested with Red Hat Satellite 6.6.0.
 
 ## Prerequisites
-Install a minimal RHEL 7 according to the Satellite 6 documentation: https://access.redhat.com/documentation/en-us/red_hat_satellite/6.6-beta/html/installing_satellite_server_from_a_connected_network/preparing_your_environment_for_installation 
+Install a minimal RHEL 7 according to the Satellite 6 documentation: https://access.redhat.com/documentation/en-us/red_hat_satellite/6.6/html/installing_satellite_server_from_a_connected_network/preparing_your_environment_for_installation 
 
 ### Register with subscription-manager
 I have intentionally left the registration steps manual because this may differ a lot between different environments. The following instructions can be seen as an example, but may not be exactly the same for you.
