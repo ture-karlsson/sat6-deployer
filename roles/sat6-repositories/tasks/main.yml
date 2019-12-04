@@ -33,6 +33,7 @@
   file:
     path: '/tmp/gpg-keys'
     state: directory
+  delegate_to: "{{ 'localhost' if fam_local else omit }}"
 
 - name: ensure GPG keys are present
   get_url:
@@ -41,6 +42,7 @@
   with_subelements:
   - "{{ custom_products }}"
   - repositories
+  delegate_to: "{{ 'localhost' if fam_local else omit }}"
 
 - name: ensure GPG keys exist
   katello_content_credential:
