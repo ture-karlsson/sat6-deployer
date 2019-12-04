@@ -78,8 +78,8 @@ redhat_products:
     basearch: x86_64
     releasever: "7.7"
 
-#  - name: Red Hat Satellite Tools 6.6 (for RHEL 7 Server) (RPMs)
-#    basearch: x86_64
+  - name: Red Hat Satellite Tools 6.6 (for RHEL 7 Server) (RPMs)
+    basearch: x86_64
 
 #  - name: Red Hat Enterprise Linux 7 Server - Optional (RPMs)
 #    basearch: x86_64
@@ -165,8 +165,8 @@ content_views:
   - name: Red Hat Enterprise Linux 7 Server RPMs x86_64 7Server
     product: Red Hat Enterprise Linux Server 
 
-#  - name: Red Hat Satellite Tools 6.4 for RHEL 7 Server RPMs x86_64
-#    product: Red Hat Enterprise Linux Server
+  - name: Red Hat Satellite Tools 6.6 for RHEL 7 Server RPMs x86_64
+    product: Red Hat Enterprise Linux Server
 #
 #  - name: Red Hat Enterprise Linux 7 Server - Extras RPMs x86_64
 #    product: Red Hat Enterprise Linux Server
