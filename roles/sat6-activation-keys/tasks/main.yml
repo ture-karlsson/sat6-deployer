@@ -13,4 +13,4 @@
     subscriptions: "{{ item.subscriptions }}"
     validate_certs: "{{ validate_certs }}"
   loop: "{{ activation_keys }}"
-  delegate_to: "{{ localhost if fam_local else omit }}"
+  delegate_to: "{{ 'localhost' if fam_local else omit }}"
