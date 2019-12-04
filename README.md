@@ -68,8 +68,6 @@ The content of inventory you be something like this:
 [satellite]
 sat6.example.com
 ```
-Update: Do not install apypie through pip on Satlelite 6.6 GA since it has dependencies that will make the installation of Satellite fail. Alternative installation method will be provided soon.
-
 
 If you execute the playbooks from the Satatellite itself, add the following line:
 ```bash
