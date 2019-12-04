@@ -1,16 +1,22 @@
 ---
 
-# Set to False if using self-signed certs on satellite
+# this url will be used to access the satellite api
+server_url: "https://{{ ansible_nodename }}"
+
+# specify username and password of the initial admin user
+username: admin
+password: redhat123
+
+# set to False if using self-signed certs on satellite
 validate_certs: True
 
-# Set to True if you want to execute hammer commands on the Ansible host
+# set to True if you want to execute hammer commands on the ansible host
 # rather than on the satellite
 hammer_local: False
 
-# Set to False if you want to execute foreman-ansible-modules on the 
-# satellite rather than the Ansible host 
+# set to False if you want to execute foreman-ansible-modules on the 
+# satellite rather than the ansible host 
 fam_local: True
-
 
 # specify what ports that should be open in the local firewall
 open_ports:
@@ -26,8 +32,6 @@ open_ports:
 - 8140/tcp
 - 9090/tcp
 
-server_url: "https://{{ ansible_nodename }}"
-
 # specify the name of your organization
 # if you need to have more than one organization in your satellite,
 # create a separate variable file for each organization
@@ -36,10 +40,6 @@ organization: "Ture"
 # specify a list of the locations that will be created
 locations:
 - "Copenhagen"
-
-# specify username and password of the initial admin user
-username: admin
-password: redhat123
 
 # specify where the manifest file is located
 manifest: "files/manifest.zip"
@@ -270,6 +270,47 @@ activation_keys:
   subscriptions:
   - name: Red Hat Enterprise Linux
 
+# specify a list of subnets that should be created.
+# name, network and mask are required, rest of the fields can be omitted.
+subnets:
+
+- name: default
+  network: 192.168.122.0
+  mask: 255.255.255.0
+  gateway: 192.168.122.1
+  mtu: 1500
+  network_type: IPv4
+  vlanid: 1
+  boot_mode: DHCP
+  ipam: DHCP
+  from_ip: 192.168.122.50
+  to_ip: 192.168.122.100
+  dns_primary: 192.168.122.10
+  dns_secondary: 4.4.4.4
+  dhcp_proxy: "{{ ansible_nodename }}"
+  discovery_proxy: "{{ ansible_nodename }}"
+  dns_proxy: "{{ ansible_nodename }}"
+  remote_execution_proxies: "{{ ansible_nodename }}"
+  tftp_proxy: "{{ ansible_nodename }}"
+
+# specify a list of compute resources that should be created
+compute_resources:
+- name: VMware
+  provider: vmware
+  provider_params:
+    url: vcenter.example.com
+    datacenter: DC1
+    user: username
+    password: password
+
+# when using libvirt as a compute resource, there are some more steps that are needed, see:
+# https://access.redhat.com/documentation/en-us/red_hat_satellite/6.6-beta/html/provisioning_guide/provisioning_virtual_machines_in_kvm
+# setting up the Compute Resource object (section 7.3 in the document above) is the only responsibility of this role.
+- name: Libvirt
+  provider: libvirt
+  provider_params:
+    url: qemu+ssh://root@kvm.example.com/system
+    display_type: vnc
 
 # specify a list of host groups that should be created.
 # all parameters can be omitted except name.
@@ -380,49 +421,12 @@ host_groups:
   - name: kt_activation_keys
     value: AK-PROD-RHEL8
 
-# specify a list of compute resources that should be created
-compute_resources:
-- name: VMware
-  provider: Vmware
-  url: vcenter.example.com
-  datacenter: DC1
-  username: username
-  password: password
-
-# specify a list of subnets that should be created.
-# name, network and mask are required, rest of the fields can be omitted.
-subnets:
-
-- name: default 
-  network: 192.168.122.0
-  mask: 255.255.255.0
-  gateway: 192.168.122.1
-  mtu: 1500
-  network_type: IPv4
-  vlanid: 1
-  boot_mode: DHCP
-  ipam: DHCP
-  from_ip: 192.168.122.50
-  to_ip: 192.168.122.100
-  dns_primary: 192.168.122.10
-  dns_secondary: 4.4.4.4
-  dhcp_proxy: "{{ ansible_nodename }}"
-  discovery_proxy: "{{ ansible_nodename }}"
-  dns_proxy: "{{ ansible_nodename }}"
-  remote_execution_proxies: "{{ ansible_nodename }}"
-  tftp_proxy: "{{ ansible_nodename }}"
-
-
 # specify a list of settings that should be changed in the satellite
 # each setting need to be specified by name (label) and value
 settings:
 
 - name: use_shortname_for_vms
   value: Yes
-
-# if the sat6-template-sync role is used, specify these variables
-template_sync_prefix: "Synced from git - "
-template_sync_repo: https://gitlab.example.com/sat6-templates.git
 
 # specify a list of custom user roles that should be created with
 # their corresponding permissions.
@@ -446,17 +450,21 @@ user_roles:
 # or a random password can be generated as in the examples below
 users:
 
-- username: svc-template-importer
-  password: clear-text-password
-  mail: dev@null.no
+- login: svc-template-importer
+  user_password: clear-text-password
+  admin: no
   auth_source: Internal
   roles:
   - Import Templates
 
-- username: svc-cv-manager
-  password: "{{ lookup('password', '/root/svc-cv-manager length=32') }}" # generated password
-  mail: dev@null.no
+- login: svc-cv-manager
+  user_password: "{{ lookup('password', '/root/svc-cv-manager length=32') }}" # generated password
+  admin: no
   auth_source: Internal
   roles:
   - Manage Content Views
+
+# if the sat6-template-sync role is used, specify these variables
+template_sync_prefix: "Synced from git - "
+template_sync_repo: https://gitlab.example.com/sat6-templates.git
 

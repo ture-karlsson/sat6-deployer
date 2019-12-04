@@ -1,6 +1,12 @@
 ---
 
-- name: update settings
-  command: hammer settings set --name "{{ item.name }}"  --value "{{ item.value }}"
-  with_items: "{{ settings }}"
-  delegate_to: "{{ 'localhost' if hammer_local else omit }}"
+- name: ensure settings are correct
+  foreman_setting:
+    username: "{{ username }}"
+    password: "{{ password }}"
+    server_url: "{{ server_url }}"
+    validate_certs: "{{ validate_certs }}"
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+  loop: "{{ settings }}"
+  delegate_to: "{{ 'localhost' if fam_local else omit }}"

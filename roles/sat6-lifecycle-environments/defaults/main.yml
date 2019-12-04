@@ -1,5 +1,4 @@
 ---
-# defaults file for sat6-activation-keys
 validate_certs: True
 hammer_local: False
 fam_local: True
